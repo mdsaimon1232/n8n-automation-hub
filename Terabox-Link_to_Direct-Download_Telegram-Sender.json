@@ -1,0 +1,675 @@
+{
+  "name": "terabox",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://terabox-downloader-direct-download-link-generator2.p.rapidapi.com/url",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-key",
+              "value": "23a4534fd6msh5c0ad3449f0d1c5p131c5ejsn475c38969b4f"
+            },
+            {
+              "name": "x-rapidapi-host",
+              "value": "terabox-downloader-direct-download-link-generator2.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        912
+      ],
+      "id": "633378df-c85e-4e5b-bd62-e80d3503933d",
+      "name": "HTTP Request",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        -96
+      ],
+      "id": "73e90f2d-6990-47de-9964-26fde9d4246f",
+      "name": "HTTP Request1",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -304,
+        96
+      ],
+      "id": "3a955fb3-d6d7-4234-8166-edf5ca041849",
+      "name": "Telegram Trigger",
+      "webhookId": "2685e453-d88f-4a01-b9f8-fef7d6ac545e",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.from.id }}",
+        "text": "plzz give me some time its preparing... depending on your file size",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "507b0bb2-c598-452f-a241-8511506b30ba",
+      "name": "Send a text message1",
+      "webhookId": "ae8b8230-2eee-4b99-a48f-daf426995663",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        -16
+      ],
+      "id": "645acc55-2981-4b61-acff-83b45e943bd2",
+      "name": "Send a video",
+      "webhookId": "21194bed-0130-4b21-9a69-831e2f8118c0",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        256,
+        -96
+      ],
+      "id": "3e45ea99-40a2-4894-8a62-c8890575eefc",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=please provide a valid link......\nlike this https://teraboxapp.com/s/xxxxxx",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        944
+      ],
+      "id": "7bbd8c5e-5917-4047-9c86-01f99bb7c459",
+      "name": "Send a text message",
+      "webhookId": "1fe1cf6b-1438-4497-ba4b-f7a172402cda",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://terabox-downloader-direct-download-link-generator.p.rapidapi.com/fetch",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "terabox-downloader-direct-download-link-generator.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "c3572fa4d4mshe0c7bfe428461f5p15bf68jsna53b6551dc80"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        528
+      ],
+      "id": "5ab08bfa-379e-48b9-827c-b6293441a8a4",
+      "name": "HTTP Request2",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6b28ae1c-f29a-4625-b6de-3514b10b131e",
+              "leftValue": "={{ $json.size }}",
+              "rightValue": 40974962,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        -16
+      ],
+      "id": "c15c8046-c406-4f66-b2a7-1cefd3bf7859",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "-1003204248002",
+        "text": "=",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        528
+      ],
+      "id": "d13446bf-a405-45cb-aab9-176c0ed7bd4b",
+      "name": "Send a text message2",
+      "webhookId": "b31edfa3-3210-439c-a535-0d3f90bd1a59",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "-1003204248002",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        -224
+      ],
+      "id": "72e63f61-c3ec-4d66-a432-1c3803a42701",
+      "name": "Send a video1",
+      "webhookId": "9fb75ec5-d104-41f4-84d2-c174fe6bdbd1",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d740eda2-662e-49e3-94af-804eb823a297",
+              "name": "dl",
+              "value": "={{ $json.dlink }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -224,
+        -160
+      ],
+      "id": "c55cdfc0-90b7-4559-a980-ba2fc1432987",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "sorry this file is very big",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        240
+      ],
+      "id": "537fad76-cb61-417a-97e8-5ccce5f6c62d",
+      "name": "Send a text message3",
+      "webhookId": "394e36a4-3a49-4947-897f-f107c34478c0",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://terabox-downloader-working-direct-download-link-generator.p.rapidapi.com",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "link",
+              "value": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "terabox-downloader-working-direct-download-link-generator.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "c3572fa4d4mshe0c7bfe428461f5p15bf68jsna53b6551dc80"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        144
+      ],
+      "id": "3a489bf6-2425-40e8-8422-b8b0b01693bb",
+      "name": "HTTP Request3",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        192,
+        368
+      ],
+      "id": "e1292c07-a546-4996-9f92-69a101c3e0eb",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.dlink }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        320
+      ],
+      "id": "64c356a0-4876-47d4-b8d8-2b7c56c01009",
+      "name": "HTTP Request4",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=run done",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        -480
+      ],
+      "id": "c23966a9-25d7-48b0-b151-d26dec456c5e",
+      "name": "Send a text message4",
+      "webhookId": "1fe1cf6b-1438-4497-ba4b-f7a172402cda",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        320,
+        -320
+      ],
+      "id": "a4e8ffc0-d500-439c-9b48-8344b934e972",
+      "name": "Aggregate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a video1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a video1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a video": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a video1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "730c22df-0036-4774-86f2-caf004ea5398",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7b31168df35d1ade7b121fb5b48d4baee6f05f2f021509e0e546e75f7e10fe85"
+  },
+  "id": "CX0N62T1UWPWoCfI",
+  "tags": []
+}

@@ -1,0 +1,1446 @@
+{
+  "name": "mgsteat",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -576,
+        -48
+      ],
+      "id": "7f876631-907e-4974-af8f-c7e453edac1d",
+      "name": "Telegram Trigger",
+      "webhookId": "486e22b2-0422-4fd9-9a9f-d05a29d4a57d",
+      "credentials": {
+        "telegramApi": {
+          "id": "RpJLHnckLfpFHdA5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger1').item.json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        224
+      ],
+      "id": "3215f6bb-4686-4ca6-b2c3-4d43fb54d05a",
+      "name": "audio",
+      "webhookId": "2021ddf3-c7dc-41a6-94f5-4dda401cd5cc",
+      "credentials": {
+        "telegramApi": {
+          "id": "lLPNODXAgVIsUfsw",
+          "name": "hostton"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger1').item.json.message.photo[0].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        -96
+      ],
+      "id": "98593088-85d2-440b-9132-32b5c9c7be51",
+      "name": "img",
+      "webhookId": "2021ddf3-c7dc-41a6-94f5-4dda401cd5cc",
+      "credentials": {
+        "telegramApi": {
+          "id": "lLPNODXAgVIsUfsw",
+          "name": "hostton"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst output = items.map((item) => {\n  if (item?.json?.message?.voice) {\n    return { json: { type: \"voice\" } };\n  } else if (item?.json?.message?.photo) {\n    return { json: { type: \"photo\" } };\n  } else if (item?.json?.message?.text) {\n    return { json: { type: \"text\" } };\n  } else {\n    return { json: { type: \"unknown\" } };\n  }\n});\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -144
+      ],
+      "id": "f0d5f1ed-b603-44cb-8407-a9fd81e1ceea",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5f7fc000-f528-48ed-b4aa-04b4209d21c9"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d3a48aa6-3a28-44f7-bd7e-74915fc63ea5",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "voice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "60052427-7783-4b55-b875-d5064452bcf2",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "photo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "18c79875-58a5-4ad1-b07c-017628804400",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=\"You are a visual recognition AI designed to generate a unique but consistent description of any dress or clothing product.\nWhen I upload an image, analyze it carefully and describe the product in a structured and detailed way that uniquely identifies it — such as its color, pattern, fabric, sleeve type, neckline, logo, and any text or label visible.\n\nThe description should be deterministic:\n\nIf I show the exact same image again, produce the exact same or nearly identical description.\n\nIf I show a different image, produce a noticeably different description.\n\nOutput format (JSON):\n\n{\n  \"category\": \"dress / t-shirt / hoodie / etc\",\n  \"color\": \"primary and secondary colors\",\n  \"pattern\": \"solid / striped / floral / graphic / etc\",\n  \"notable_features\": [\"logo text\", \"design details\", \"neckline type\", \"sleeve type\"],\n  \"unique_description\": \"short combined fingerprint-like text summarizing this product\"\n}\n\n\nInput: [attach image here]\nOutput: JSON description of the product.\"",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -64
+      ],
+      "id": "63c3d5fe-0502-4876-94d2-80221332dee9",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bCpykgjI8kw515xZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_prompt }}",
+        "options": {
+          "systemMessage": "=You are a helpful and friendly Bangladeshi online sales assistant.  \nYou have access to a Google Sheet that contains product information with three columns:\n1. \"code\" – unique identifier of the product  \n2. \"detail\" – product description or name  \n3. \"price\" – fixed price of the product  \n\nThe user input you receive is in JSON format and contains structured fields such as:\n- category  \n- color  \n- pattern  \n- notable_features (a list of features)  \n- unique_description  \n\nYour job:\n- Read the JSON input and combine all fields (category, color, pattern, notable_features, and unique_description) into a single natural-language description of the product.\n- Then match that combined description with the “detail” column in the Google Sheet to identify the correct product.  \n  (Never ask the user for a code. The user never provides it.)\n- Respond **only in Bangla**, always polite, short, and conversational.\n- When you find a match, show the item's name (detail) and price.\n- If multiple items match, pick the most relevant one by meaning.\n- Never ask for extra description since you already have all info in the JSON input.\n- If no close match is found at all, then politely say:  \n  “দুঃখিত ভাই, মনে হচ্ছে এই ডিজাইনটা আমাদের স্টকে নেই 😔”\n- If the user tries to negotiate, politely say:  \n  “দুঃখিত, এই দামের নিচে দেওয়া সম্ভব না। এটা ফিক্সড প্রাইস 🥰”\n- After showing the product detail and price, ask:\n  1. “আপনি কোন সাইজ নিবেন? (S / M / L থেকে বেছে নিন)”  \n  2. “ডেলিভারির ঠিকানাটা দিতে পারবেন?”  \n  3. “আপনার ফোন নাম্বারটা দিবেন ভাই? 📱”\n- Once you have all info, confirm the order in this format:\n\nঅর্ডার কনফার্ম করার আগে নিচের তথ্যগুলো একবার দেখে নিন 💬\n\n🛍️ আইটেমের নাম: [detail]  \n📏 সাইজ: [size]  \n📍 ঠিকানা: [address]  \n💸 মূল্য: [price]  \n📞 ফোন নাম্বার: [phone_number]  \n\nআপনি কি অর্ডারটি কনফার্ম করতে চান?\n\n**Important rules:**\n- Never mention the “code” column to the user.\n- Never guess or alter the price — always use the sheet value.\n- Do not ask for more detail if JSON input is already given.\n- Always answer fully in Bangla.\n- Be short, friendly, and natural.\n- dont give unnecessary info be straight forward\n\n💡 Example input and AI behavior:\n\n**Input JSON:**\n```json\n{\n  \"category\": \"dress\",\n  \"color\": \"off-white\",\n  \"pattern\": \"solid\",\n  \"notable_features\": [\n    \"off-the-shoulder neckline\",\n    \"high left leg slit\",\n    \"draped bodice with subtle V-neck detail\",\n    \"floor-length A-line silhouette\"\n  ],\n  \"unique_description\": \"Off-white off-the-shoulder floor-length A-line dress featuring a high left leg slit and a draped bodice with subtle V-neck detailing.\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        -272
+      ],
+      "id": "c890bf80-9e97-42e0-9a22-472f33dcadc6",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        -16
+      ],
+      "id": "666f65a2-3c30-4bbe-86d9-c4b6294b5558",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bCpykgjI8kw515xZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input text\nconst inputText = $input.first().json.content.parts[0].text;\n\n// Step 1: Clean markdown and escape sequences\nconst cleanText = inputText\n  .replace(/^```json\\s*/, \"\")   // Remove ```json or ```json\\n\n  .replace(/```$/, \"\")          // Remove ending ```\n  .trim();\n\n// Step 2: Parse JSON safely\nlet parsedJson;\ntry {\n  parsedJson = JSON.parse(cleanText);\n} catch (error) {\n  return [{\n    error: \"Invalid JSON format\",\n    details: error.message,\n    raw_input: cleanText\n  }];\n}\n\n// Step 3: Format each section separately into readable JSON text\nlet formattedOutput = \"\";\n\nfor (const [key, value] of Object.entries(parsedJson)) {\n  formattedOutput += JSON.stringify({ [key]: value }, null, 2) + \"\\n\\n\";\n}\n\n// Step 4: Return single output item\nreturn [{\n  json: {\n    formatted_text: formattedOutput.trim(),\n    parsed: parsedJson\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        992
+      ],
+      "id": "e8fb6f08-c797-49b0-8717-ac374e937cbd",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg",
+          "mode": "list",
+          "cachedResultName": "work",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1408,
+        -96
+      ],
+      "id": "72d2a850-30ce-4816-9227-837d84e88f9a",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xJnvPWpC7Jxx4ItX",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        208
+      ],
+      "id": "b40f7f58-4fe6-4c2d-9917-7773106a3df9",
+      "name": "Telegram Trigger1",
+      "webhookId": "486e22b2-0422-4fd9-9a9f-d05a29d4a57d",
+      "credentials": {
+        "telegramApi": {
+          "id": "lLPNODXAgVIsUfsw",
+          "name": "hostton"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_prompt }}",
+        "options": {
+          "systemMessage": "You have access to a Google Sheet column named \"code\".\nThe user will give you instructions such as “update the price,” “get the info,” or “update the data.”\nYour job is to correctly recognize the type of task based on the user’s message.\n\nThere are two main task types:\n\nDetail — when the user talks about product details or information.\n\nPrice — when the user mentions updating, changing, or setting a price.\n\nRules:\n\nIf the user’s message is about details, set type to \"detail\".\n\nIf the user’s message is about price, set type to \"price\".\n\nThe user will also provide a code (a value from the “code” column).\n\nYou must find which row that code belongs to.\n\nIf the user mentions a new price value, recognize it as value.\n\nOutput format (JSON):\n\n{\n  \"type\": \"price\",\n  \"value\": 108,\n  \"row\": 6\n}\n\n\nor, if it’s a detail update (no price given):\n\n{\n  \"type\": \"detail\",\n  \"row\": 6\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        656
+      ],
+      "id": "98fbbed2-b818-4d3a-8e72-ada15cdba485",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        688,
+        768
+      ],
+      "id": "fa2e14bf-b525-4d38-8625-9f13d3941c1b",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bCpykgjI8kw515xZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "text": "just transcript the audio. if its in any other language instead of english translate it to english",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        672,
+        304
+      ],
+      "id": "b483be7f-7c7f-4c67-9144-04042591889c",
+      "name": "Analyze audio",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bCpykgjI8kw515xZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d34c43f-bcca-4360-ae3d-89f344c3ec7d",
+              "name": "user_prompt",
+              "value": "={{ $('Telegram Trigger1').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        656,
+        -416
+      ],
+      "id": "3af9b5cb-d529-4451-accd-733fddbc393f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "57782df0-23e5-44d3-aa06-0ee798b42ba0",
+              "name": "user_prompt",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        16
+      ],
+      "id": "f759ac9c-91d1-4391-9f4b-e9cce6f1b4d3",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg",
+          "mode": "list",
+          "cachedResultName": "work",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "price": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('price__using_to_match_', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "price"
+          ],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "detail",
+              "displayName": "detail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1200,
+        768
+      ],
+      "id": "32957ad5-8d1e-48fb-834a-7a8108627a8b",
+      "name": "Update row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xJnvPWpC7Jxx4ItX",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg",
+          "mode": "list",
+          "cachedResultName": "work",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "detail": "={{ $('Analyze an image1').item.json.content.parts[0].text }}",
+            "code": "={{ $json.parsed.unique_code }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "code",
+              "displayName": "code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "detail",
+              "displayName": "detail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        944
+      ],
+      "id": "c9aedaa6-87a8-4440-a760-aba060fc81d5",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xJnvPWpC7Jxx4ItX",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg",
+          "mode": "list",
+          "cachedResultName": "work",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "code",
+              "lookupValue": "={{ $json.code }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        1056
+      ],
+      "id": "4356f906-3fb0-4b5a-b7e4-b849d2e8a680",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xJnvPWpC7Jxx4ItX",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input text\nconst inputText = $input.first().json.output;\n\n// Step 1: Clean markdown and escape sequences\nconst cleanText = inputText\n  .replace(/^```json\\s*/, \"\")   // Remove ```json or ```json\\n\n  .replace(/```$/, \"\")          // Remove ending ```\n  .trim();\n\n// Step 2: Parse JSON safely\nlet parsedJson;\ntry {\n  parsedJson = JSON.parse(cleanText);\n} catch (error) {\n  return [{\n    error: \"Invalid JSON format\",\n    details: error.message,\n    raw_input: cleanText\n  }];\n}\n\n// Step 3: Format each section separately into readable JSON text\nlet formattedOutput = \"\";\n\nfor (const [key, value] of Object.entries(parsedJson)) {\n  formattedOutput += JSON.stringify({ [key]: value }, null, 2) + \"\\n\\n\";\n}\n\n// Step 4: Return single output item\nreturn [{\n  json: {\n    formatted_text: formattedOutput.trim(),\n    parsed: parsedJson\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        640
+      ],
+      "id": "ecc6bfc6-95a7-4fb2-85d8-a81aa9a8c558",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input text\nconst inputText = $input.first().json.content.parts[0].text;\n\n// Step 1: Clean markdown and escape sequences\nconst cleanText = inputText\n  .replace(/^```json\\s*/, \"\")   // Remove ```json or ```json\\n\n  .replace(/```$/, \"\")          // Remove ending ```\n  .trim();\n\n// Step 2: Parse JSON safely\nlet parsedJson;\ntry {\n  parsedJson = JSON.parse(cleanText);\n} catch (error) {\n  return [{\n    error: \"Invalid JSON format\",\n    details: error.message,\n    raw_input: cleanText\n  }];\n}\n\n// Step 3: Format each section separately into readable JSON text\nlet formattedOutput = \"\";\n\nfor (const [key, value] of Object.entries(parsedJson)) {\n  formattedOutput += JSON.stringify({ [key]: value }, null, 2) + \"\\n\\n\";\n}\n\n// Step 4: Return single output item\nreturn [{\n  json: {\n    formatted_text: formattedOutput.trim(),\n    parsed: parsedJson\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        416
+      ],
+      "id": "cd714671-abf0-4193-8cbe-045180c9d90d",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg",
+          "mode": "list",
+          "cachedResultName": "work",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "price": "={{ $json.parsed.value }}",
+            "row_number": "={{ $json.parsed.row }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "code",
+              "displayName": "code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "detail",
+              "displayName": "detail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1776,
+        736
+      ],
+      "id": "5e83251a-554b-4f42-bde0-ef56ddaa0738",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xJnvPWpC7Jxx4ItX",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.from.id }}",
+        "message": "={{ $json.code }}\nrow number={{ $json.row_number }}",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Price for the item"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        1056
+      ],
+      "id": "400c0263-4f2d-4f1d-a584-ef13cfccd7be",
+      "name": "Send message and wait for response",
+      "webhookId": "66fbb5a8-985a-44d1-b035-a1de0e574a36",
+      "credentials": {
+        "telegramApi": {
+          "id": "lLPNODXAgVIsUfsw",
+          "name": "hostton"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg",
+          "mode": "list",
+          "cachedResultName": "work",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1W5DeeprqraWNPlDYzeAjsjntCmEVRSxNzq2B6Myq6yg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "price": "={{ $json.data['Price for the item'] }}",
+            "row_number": "={{ $('Get row(s) in sheet').item.json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "code",
+              "displayName": "code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "detail",
+              "displayName": "detail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "price",
+              "displayName": "price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1520,
+        1056
+      ],
+      "id": "5c96f5ae-e6ac-4650-b443-db4e2116641b",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xJnvPWpC7Jxx4ItX",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst output = items.map((item) => {\n  if (item?.json?.message?.voice) {\n    return { json: { type: \"voice\" } };\n  } else if (item?.json?.message?.photo) {\n    return { json: { type: \"photo\" } };\n  } else if (item?.json?.message?.text) {\n    return { json: { type: \"text\" } };\n  } else {\n    return { json: { type: \"unknown\" } };\n  }\n});\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        48
+      ],
+      "id": "8c8bef40-bd17-4b5e-b198-820843b88c47",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst output = items.map((item) => {\n  if (item?.json?.message?.voice) {\n    return { json: { type: \"voice\" } };\n  } else if (item?.json?.message?.photo) {\n    return { json: { type: \"photo\" } };\n  } else if (item?.json?.message?.text) {\n    return { json: { type: \"text\" } };\n  } else {\n    return { json: { type: \"unknown\" } };\n  }\n});\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        400
+      ],
+      "id": "05c2f7e9-c8c5-4146-bde2-fb52b19900d9",
+      "name": "admin"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=\"You are a visual recognition AI designed to generate a unique but consistent description of any dress or clothing product.\nWhen I upload an image, analyze it carefully and describe the product in a structured and detailed way that uniquely identifies it — such as its color, pattern, fabric, sleeve type, neckline, logo, and any text or label visible.\n\nThe description should be deterministic:\n\nIf I show the exact same image again, produce the exact same or nearly identical description.\n\nIf I show a different image, produce a noticeably different description.\n\nOutput format (JSON):\n\n{\n  \"unique_code\":\"short code (e.g RR54)\"\n  \"category\": \"dress / t-shirt / hoodie / etc\",\n  \"color\": \"primary and secondary colors\",\n  \"pattern\": \"solid / striped / floral / graphic / etc\",\n  \"notable_features\": [\"logo text\", \"design details\", \"neckline type\", \"sleeve type\"],\n  \"unique_description\": \"short combined fingerprint-like text summarizing this product\"\n}\n\n\nInput: [attach image here]\nOutput: JSON description of the product.\"",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        432,
+        848
+      ],
+      "id": "ead5e39b-6c1c-49c3-b413-7c6fbb5c0450",
+      "name": "Analyze an image1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bCpykgjI8kw515xZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "conversation_history",
+        "contextWindowLength": 6
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1232,
+        -64
+      ],
+      "id": "8bb0aada-d529-4308-a1e2-1a450349346d",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1616,
+        -240
+      ],
+      "id": "21a367f7-ebb8-47fc-8a10-f820784aaa28",
+      "name": "Send a text message",
+      "webhookId": "5333d84c-a2fd-458e-829e-d1e892134c16",
+      "credentials": {
+        "telegramApi": {
+          "id": "lLPNODXAgVIsUfsw",
+          "name": "hostton"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger1').item.json.message.photo[0].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        784
+      ],
+      "id": "b738c0a6-da65-45ad-b2aa-229770d4de7d",
+      "name": "img1",
+      "webhookId": "2021ddf3-c7dc-41a6-94f5-4dda401cd5cc",
+      "credentials": {
+        "telegramApi": {
+          "id": "lLPNODXAgVIsUfsw",
+          "name": "hostton"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5f7fc000-f528-48ed-b4aa-04b4209d21c9"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d3a48aa6-3a28-44f7-bd7e-74915fc63ea5",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "voice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "60052427-7783-4b55-b875-d5064452bcf2",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "photo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        112,
+        656
+      ],
+      "id": "662d4898-352a-4b69-b503-31b547e93834",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d34c43f-bcca-4360-ae3d-89f344c3ec7d",
+              "name": "user_prompt",
+              "value": "={{ $('Telegram Trigger1').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        544
+      ],
+      "id": "301dffaa-1f8f-442d-b024-072a89132e3f",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "57782df0-23e5-44d3-aa06-0ee798b42ba0",
+              "name": "user_prompt",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        304
+      ],
+      "id": "118ef8da-b24b-4054-817a-81fab996c601",
+      "name": "Edit Fields3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "img",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "audio": {
+      "main": [
+        [
+          {
+            "node": "Analyze audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "img": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze audio": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "img1": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "img1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "admin": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bf8ef059-d805-4795-8ef8-ad2e59fb7b96",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7b31168df35d1ade7b121fb5b48d4baee6f05f2f021509e0e546e75f7e10fe85"
+  },
+  "id": "ETOkuGwTnnTqegA5",
+  "tags": []
+}

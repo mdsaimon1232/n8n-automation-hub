@@ -1,0 +1,1031 @@
+{
+  "name": "video post",
+  "nodes": [
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "me",
+        "edge": "videos",
+        "sendBinaryData": true,
+        "binaryPropertyName": "file:data",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "description",
+                "value": "={{ $json.caption }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -128
+      ],
+      "id": "2a397fbe-6094-4524-9f66-6ea145125ace",
+      "name": "Facebook Graph API",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "u0jEfB8VlfBIdbR8",
+          "name": "post"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "limit": 100,
+        "filter": {
+          "driveId": {
+            "mode": "list",
+            "value": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "1GSzsRpQg59OEUwrodupz86jrIXwN7VRy",
+            "mode": "list",
+            "cachedResultName": "video_upload",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1GSzsRpQg59OEUwrodupz86jrIXwN7VRy"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -384,
+        -112
+      ],
+      "id": "68d6ee10-8e66-4909-aa52-9e0cda074fdd",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uw5lShkY0TIsrq89",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Search files and folders').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        768,
+        -16
+      ],
+      "id": "c469f59f-01ed-4a6e-b65a-c12482afa670",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uw5lShkY0TIsrq89",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the file name from previous node\nconst filename = $input.first().json.name;\n\n// Split the filename by \".\"\nconst parts = filename.split('.');\n\n// Extract the extension (last part)\nconst extension = parts.pop();\n\n// Get the name without extension (join the remaining parts)\nconst nameWithoutExtension = parts.join('.');\n\n// Return both fields\nreturn {\n  extension,\n  nameWithoutExtension\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        -32
+      ],
+      "id": "34371d4d-8c46-4717-84fe-d82a297b18c5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ed362bc6-ea8b-41b9-8979-e3ecbfac5ab1",
+              "leftValue": "={{ $json.extension }}",
+              "rightValue": "mp4",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        -32
+      ],
+      "id": "a184c265-e11d-47df-83e1-d2f610ce1322",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        -80
+      ],
+      "id": "739e8346-7dc4-42ae-a4f8-5d5cd048ae17",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "6288372897",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "={{ $json.caption }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        -336
+      ],
+      "id": "612f39a8-7c28-4f3a-8e7a-fab0d3e3fb89",
+      "name": "Send a video",
+      "webhookId": "cd189efa-8fa4-4d41-9557-5973b402ed75",
+      "credentials": {
+        "telegramApi": {
+          "id": "FUsMLz5hHHuEmhiA",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "=v23.0",
+        "node": "17841477317217322",
+        "edge": "media",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "video_url",
+                "value": "={{ $json.Attachments[0].url }}"
+              },
+              {
+                "name": "media_type",
+                "value": "REELS"
+              },
+              {
+                "name": "caption",
+                "value": "={{ $('Edit Fields').item.json.yt }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1696,
+        400
+      ],
+      "id": "1a051fd7-1e19-4457-b707-8c64d97b04d7",
+      "name": "insta",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "EOftueVBCPe3ZGE0",
+          "name": "insta"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -688,
+        48
+      ],
+      "id": "e0ee1fd8-e9f6-4e8d-b38a-f42452f82aa8",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appqPfDRdYiDucBA9",
+          "mode": "list",
+          "cachedResultName": "video up",
+          "cachedResultUrl": "https://airtable.com/appqPfDRdYiDucBA9"
+        },
+        "table": {
+          "__rl": true,
+          "value": "=tblSurh1bqBA8UqYy",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Loop Over Items').item.json.name }}",
+            "Caption": "={{ $('Loop Over Items').item.json.id }}",
+            "Attachments": "=[{\n  \"url\": \"https://drive.google.com/uc?id={{ $('Loop Over Items').item.json.id }}&export=download\"\n}]\n\n"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Caption",
+              "displayName": "Caption",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachments",
+              "displayName": "Attachments",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        816,
+        336
+      ],
+      "id": "ec829a2c-bd96-4971-8a17-84d718dbb30a",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "g05u2kLPCSEwQCAr",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841477317217322",
+        "edge": "media_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        480
+      ],
+      "id": "3e19a8a7-715c-4360-bd6d-244b96d2a81f",
+      "name": "Facebook Graph API1",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "EOftueVBCPe3ZGE0",
+          "name": "insta"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841477317217322",
+        "edge": "media",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "caption",
+                "value": "={{ $json.fields.Caption }}"
+              },
+              {
+                "name": "node",
+                "value": "17841477317217322"
+              },
+              {
+                "name": "video_url",
+                "value": "=data"
+              },
+              {
+                "name": "media_type",
+                "value": "REELS"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        -80
+      ],
+      "id": "04d13d17-c6b6-4dd7-97d9-994ffa74715d",
+      "name": "insta1",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "EOftueVBCPe3ZGE0",
+          "name": "insta"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "17841477317217322",
+        "edge": "media_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        16
+      ],
+      "id": "2b9f5d5e-83b4-4bd2-9c1f-5ddad54ba248",
+      "name": "Facebook Graph API2",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "EOftueVBCPe3ZGE0",
+          "name": "insta"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "path": "=/mehedy303/testvideo/{{ $('Loop Over Items').item.json.name }}",
+        "binaryData": true
+      },
+      "type": "n8n-nodes-base.dropbox",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        -240
+      ],
+      "id": "b9a587e4-87dd-4afb-8396-7c0db5261ae6",
+      "name": "Upload a file",
+      "credentials": {
+        "dropboxOAuth2Api": {
+          "id": "zG7iPWfsVbdVkree",
+          "name": "Dropbox account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "download",
+        "path": "="
+      },
+      "type": "n8n-nodes-base.dropbox",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        128
+      ],
+      "id": "4510d84f-99ad-49a8-8011-65260c103dfd",
+      "name": "Download a file",
+      "credentials": {
+        "dropboxOAuth2Api": {
+          "id": "zG7iPWfsVbdVkree",
+          "name": "Dropbox account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "list",
+        "path": "/mehedy303/testvideo",
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.dropbox",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -144
+      ],
+      "id": "9ed15e49-aca7-4d8e-9576-df204f655528",
+      "name": "List a folder",
+      "credentials": {
+        "dropboxApi": {
+          "id": "2PXxnZE47Dbmh7mS",
+          "name": "Dropbox account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Search files and folders').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "deletePermanently": true
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2112,
+        256
+      ],
+      "id": "e50e0f03-c317-4a2c-9cf5-2328adbf0f7b",
+      "name": "Delete a file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uw5lShkY0TIsrq89",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        496
+      ],
+      "id": "d5f16bee-c31f-4f39-9f4a-60c257b24f77",
+      "name": "Wait1",
+      "webhookId": "fa642d11-7b39-4170-9c24-08b0122f5c05"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appqPfDRdYiDucBA9",
+          "mode": "list",
+          "cachedResultName": "video up",
+          "cachedResultUrl": "https://airtable.com/appqPfDRdYiDucBA9"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblSurh1bqBA8UqYy",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appqPfDRdYiDucBA9/tblSurh1bqBA8UqYy"
+        },
+        "id": "={{ $json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1312,
+        432
+      ],
+      "id": "d147d35e-d9d8-4e1d-b1d3-24615bec9c30",
+      "name": "Get a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "g05u2kLPCSEwQCAr",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        320
+      ],
+      "id": "c622a779-72a3-4797-9f18-4a66c27a270b",
+      "name": "Wait",
+      "webhookId": "9e0bbd9b-4584-4e59-bd8c-d38617f16f4f"
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2176,
+        480
+      ],
+      "id": "084c3c30-3256-4490-bdd6-40d501991d79",
+      "name": "Wait2",
+      "webhookId": "f4aa974e-31aa-44d8-b2a6-d84f4f969b1a"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        208
+      ],
+      "id": "5ff7e7d0-57d5-4976-87ce-c98c581e8132",
+      "name": "Wait3",
+      "webhookId": "c3e87289-0858-4e8f-80ec-2fc345da532e"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.yt }}",
+        "regionCode": "IN",
+        "categoryId": "24",
+        "options": {
+          "description": "={{ $json.caption }}",
+          "privacyStatus": "public"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        976,
+        96
+      ],
+      "id": "ce79ff59-adcc-4352-898c-3fd96cd8e86d",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "w5k542Ieoc2N87fq",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "=Make captions and hashtags for this funny video for Instagram, Facebook, and YouTube.\nSuggested caption: {{ $json.nameWithoutExtension }}.\n\nOutput ONLY in this exact JSON format:\n{\n\"part1\":\"caption\",\n\"part2\":\"caption\"\n}\n\nRules:\n- part1: Funny caption for Instagram & Facebook with 5–10 hashtags.\n- part2: YouTube title with exactly 3 hashtags.\n- part2 must be VERY short — strictly under 100 characters total.\n- Count every letter, space, punctuation, and hashtag.\n- If part2 exceeds 100 characters, REWRITE it shorter until it’s under 100.\n- Never add explanations or text outside the JSON.\n",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        464,
+        -176
+      ],
+      "id": "7886e9c6-6698-447f-978a-6c0f54ba89fc",
+      "name": "Analyze video",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RA9sSKOopMNu3wtD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Search files and folders').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        320,
+        -288
+      ],
+      "id": "46b21e9d-20c3-4a5e-acf5-449e19b2aa80",
+      "name": "Download file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uw5lShkY0TIsrq89",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a27bbaa-d27a-449b-ac61-8c875e54eb12",
+              "name": "caption",
+              "value": "={{ $json.part1 }}",
+              "type": "string"
+            },
+            {
+              "id": "f1f87527-1dd2-418d-aa49-250b6cbab6b4",
+              "name": "yt",
+              "value": "={{ $json.part2 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        656,
+        -224
+      ],
+      "id": "e3329cec-ed4d-4155-8e99-e9c230b35689",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read input from $input.first().json.content.parts[0].text\nconst inputText = $input.first().json.content.parts[0].text || '';\n\n// Extract part1 and part2 from string\nfunction extractParts(text) {\n    const part1Match = text.match(/\"part1\"\\s*:\\s*\"([^\"]*)\"/);\n    const part2Match = text.match(/\"part2\"\\s*:\\s*\"([^\"]*)\"/);\n\n    const part1 = part1Match ? part1Match[1] : '';\n    const part2 = part2Match ? part2Match[1] : '';\n\n    return { part1, part2 };\n}\n\n// Simplify text but KEEP hashtags\nfunction simplifyKeepHashtags(text) {\n    if (!text) return '';\n\n    // Remove Markdown formatting characters (*, _, ~, `)\n    text = text.replace(/[*_`~]/g, '');\n\n    // Remove emojis (but preserve hashtags)\n    // This regex avoids removing '#' or letters/numbers\n    text = text.replace(/([\\u2700-\\u27BF]|[\\uE000-\\uF8FF]|[\\uD83C-\\uDBFF][\\uDC00-\\uDFFF]|[\\uFE00-\\uFE0F]|[\\u2600-\\u26FF])/g, '');\n\n    // Normalize whitespace\n    text = text.replace(/\\s+/g, ' ').trim();\n\n    // Simplify repeated punctuation (!!! -> !, ??? -> ?)\n    text = text.replace(/([!?.,])\\1+/g, '$1');\n\n    return text;\n}\n\n// Extract raw parts\nconst { part1: rawPart1, part2: rawPart2 } = extractParts(inputText);\n\n// Simplify them\nconst part1 = simplifyKeepHashtags(rawPart1);\nconst part2 = simplifyKeepHashtags(rawPart2);\n\nreturn [\n    {\n        json: {\n            part1,\n            part2\n        }\n    }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -16
+      ],
+      "id": "64e3cde3-05ba-4d7a-8b81-37531c1acc6e",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2025-10-18T00:00:40.015+06:00",
+          "Readable date": "October 18th 2025, 12:00:40 am",
+          "Readable time": "12:00:40 am",
+          "Day of week": "Saturday",
+          "Year": "2025",
+          "Month": "October",
+          "Day of month": "18",
+          "Hour": "00",
+          "Minute": "00",
+          "Second": "40",
+          "Timezone": "Asia/Dhaka (UTC+06:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download file1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Graph API": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insta": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insta1": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a file": {
+      "main": [
+        [
+          {
+            "node": "List a folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download a file": {
+      "main": [
+        []
+      ]
+    },
+    "List a folder": {
+      "main": [
+        []
+      ]
+    },
+    "Delete a file": {
+      "main": [
+        []
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a record": {
+      "main": [
+        [
+          {
+            "node": "insta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Graph API1": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Delete a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze video": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file1": {
+      "main": [
+        [
+          {
+            "node": "Analyze video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "90728d94-ad7d-45d6-bb27-d217e7266697",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6b2a2792e2084f88b89d6812f64e6f6c7bdb546497b8eaa54b089f29de94d05d"
+  },
+  "id": "OTl3vqldkRN30JQq",
+  "tags": []
+}

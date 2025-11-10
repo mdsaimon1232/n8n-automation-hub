@@ -1,0 +1,362 @@
+{
+  "name": "Automate YouTube Uploads with AI-Generated Metadata from Google Drive",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "id": "add1cd70-4bf4-42f5-87d9-68fa31af7f56",
+      "name": "Download New Video",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        448,
+        416
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Nk0URVblnf06UrXz",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1JKJhIEkHzy_acu6oKCIrjCJ4q4MItTGg",
+          "mode": "list",
+          "cachedResultName": "memememememe",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1JKJhIEkHzy_acu6oKCIrjCJ4q4MItTGg"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "1308e94d-1c68-4fae-9d94-ba6248947581",
+      "name": "New Video?",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        48,
+        288
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Nk0URVblnf06UrXz",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Now follows the actual topic/transcript. Give me the YouTube tags for it:\n\nI'm going to upload a video to social media. Here are some examples of descriptions that have worked well on Instagram:",
+        "options": {
+          "systemMessage": "I'm going to upload a video to social media. Here are some examples of descriptions that have worked well on Instagram:\n\nFollow and save for later. Discover InfluencersDe, the AI tool that automates TikTok creation and publishing to drive traffic to your website. Perfect for entrepreneurs and brands.\n#digitalmarketing #ugc #tiktok #ai #influencersde #contentcreation\n\n\nExpected output:\nGold price, future gold price, gold investments, asset returns, stocks and bonds, investment returns, adjusted returns, gold market, financial markets, gold price forecast, economic trends, investing in gold, stock market analysis, bond market, investment strategies, inflation and gold, gold vs. stocks, financial analysis, precious metals, portfolio management, market outlook, investment tips"
+        }
+      },
+      "id": "23141199-5df7-47d0-8d0e-f5b3a7fe7668",
+      "name": "YT Tags",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1760,
+        144
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "update",
+        "videoId": "={{ $('Upload Video to Youtube').item.json.uploadId }}",
+        "title": "={{ $json.text }}",
+        "regionCode": "IN",
+        "categoryId": "24",
+        "updateFields": {
+          "privacyStatus": "public",
+          "tags": "={{ $('YT Tags').item.json.output }}"
+        }
+      },
+      "id": "c6e0bf83-6eaa-41be-9ea1-0dba4cace444",
+      "name": "Update Video's Metadata",
+      "type": "n8n-nodes-base.youTube",
+      "position": [
+        2608,
+        240
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "2CxDXJDxXqhvrUBq",
+          "name": "YouTube account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "# Upload New Video to Youtube 🎥⬆️",
+        "height": 240,
+        "width": 700,
+        "color": 4
+      },
+      "id": "813fc8fc-ed3c-4cd7-8aa5-4c4084fd4e0d",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# Get Transcript for Context and Generate Metadata from It 📝🔍",
+        "height": 500,
+        "width": 2660,
+        "color": 4
+      },
+      "id": "0fb360ba-f843-4820-b05d-3149d7516526",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        -32
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Download New Video').item.json.id }}"
+        },
+        "options": {}
+      },
+      "id": "a82d27b7-967e-48f8-8ead-a184872a7abc",
+      "name": "Delete File from Upload Folder (Optional)",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2848,
+        208
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Nk0URVblnf06UrXz",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "adadada",
+        "regionCode": "IN",
+        "categoryId": "24",
+        "options": {
+          "privacyStatus": "private",
+          "selfDeclaredMadeForKids": false
+        }
+      },
+      "id": "4cff725b-cff0-45e0-9cab-24c2f233c94e",
+      "name": "Upload Video to Youtube",
+      "type": "n8n-nodes-base.youTube",
+      "position": [
+        896,
+        304
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "2CxDXJDxXqhvrUBq",
+          "name": "YouTube account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "x-ai/grok-4-fast:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        320
+      ],
+      "id": "f177eaec-c530-4cdd-967f-47beab01b99b",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KgXn8dGBUnbH2tPP",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=I'm going to upload a video to social media. Here are some examples of descriptions that have worked well on Instagram:\n\nFollow and save for later. Discover InfluencersDe, the AI tool that automates TikTok creation and publishing to drive traffic to your website. Perfect for entrepreneurs and brands.\n#digitalmarketing #ugc #tiktok #ai #influencersde #contentcreation\n\nDiscover the video marketing revolution with InfluencersDe!\n#socialmedia #videomarketing #ai #tiktok #influencersde #growthhacking\n\nDon't miss InfluencersDe, the tool that transforms your marketing strategy with just one click!\n#ugc #ai #tiktok #digitalmarketing #influencersde #branding\n\nIMPORTANT: Reply only with the title, don't add anything else.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an expert assistant in creating engaging social media video titles.\nthe title should be in 100 letters and dont give any tags in the title"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2224,
+        208
+      ],
+      "id": "71c06774-f7a2-4eef-87ce-02834b9b8ac5",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "x-ai/grok-4-fast:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2224,
+        368
+      ],
+      "id": "587e0d61-2252-414c-8447-682790dbbb1c",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KgXn8dGBUnbH2tPP",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "YT Tags": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Video?": {
+      "main": [
+        [
+          {
+            "node": "Download New Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download New Video": {
+      "main": [
+        [
+          {
+            "node": "Upload Video to Youtube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Video's Metadata": {
+      "main": [
+        [
+          {
+            "node": "Delete File from Upload Folder (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video to Youtube": {
+      "main": [
+        [
+          {
+            "node": "YT Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "YT Tags",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Update Video's Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3fb8b357-3a5b-432c-831c-a775d33d192d",
+  "meta": {
+    "templateId": "3906",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "978b546dddc3cf3f1c79410c9e05731eccaa182ddd4dbeebfe8e820a23896350"
+  },
+  "id": "ztxWYgYD1lDzm9dZ",
+  "tags": []
+}

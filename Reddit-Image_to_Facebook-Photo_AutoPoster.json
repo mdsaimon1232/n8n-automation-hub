@@ -1,0 +1,989 @@
+{
+  "name": "Auto-Download Reddit Memes to Google Drive with Duplicate Detection & Telegram Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "108afa46-571b-4e15-ab1a-bfb03ac7972b",
+              "name": "telegram_chat_id",
+              "type": "string",
+              "value": "YOUR_TELEGRAM_CHAT_ID"
+            },
+            {
+              "id": "0937ebce-93ae-45c3-89f4-1594f9eb39dd",
+              "name": "wait_in_seconds",
+              "type": "number",
+              "value": 1
+            },
+            {
+              "id": "ed0ae7de-b9c3-4ad6-82d4-d288b22c06d7",
+              "name": "image_base_url",
+              "type": "string",
+              "value": "i.redd.it"
+            },
+            {
+              "id": "5c6cd357-d78b-4b40-acc6-9d3ba966ea5f",
+              "name": "subreddits_array",
+              "type": "array",
+              "value": "=[\n'dankmemes',\n'memes',\n'Animemes',\n'me_irl',\n'wholesomememes',\n'HistoryMemes',\n'terriblefacebookmemes',\n'PrequelMemes',\n'SequelMemes',\n'OTMemes',\n'OKBuddyRetard',\n'BikiniBottomTwitter',\n'DeepFriedMemes',\n'BoneHurtingJuice',\n'Starterpacks',\n'ComedyCemetery',\n'MemeEconomy',\n'PewdiepieSubmissions',\n'HolUp',\n'CleanMemes',\n'ProgrammerHumor',\n'Genshin_Memepact',\n'JoJoMemes',\n'FellowKids',\n'MemeTemplatesOfficial',\n'Shitposting',\n'LeagueOfMemes',\n'GamingMemes',\n'MinecraftMemes',\n'AmongUs',\n'fortnitememes',\n'PUBGmemes',\n'ValorantMemes',\n'Apexrollouts',\n'CSGOmemes',\n'Sbubby',\n'2meirl4meirl',\n'antiMeme',\n'HistoryAnimemes',\n'OkBuddyPersona',\n'OkBuddyHelltaker',\n'OkBuddyJoestar',\n'OkBuddyChica',\n'OkBuddyPol',\n'OkBuddyBaka',\n'OkBuddyGenshin',\n'HelltakerMemes',\n'196',\n'196memes',\n'starwarsmemes',\n'HarryPotterMemes',\n'MarvelMemes',\n'AvengersMemes',\n'LotrMemes',\n'DnDMemes',\n'PokemonMemes',\n'NintendoMemes',\n'SmashMemes',\n'ZeldaMemes',\n'KirbyMemes',\n'SplatoonMemes',\n'SonicMemes',\n'Overwatch_Memes',\n'Dota2Memes',\n'TF2memes',\n'RocketLeagueMemes',\n'FIFA_Memes',\n'NFLMemes',\n'nba_memes',\n'soccermemes',\n'FormulaDank',\n'PoliticalCompassMemes',\n'PoliticalMemes',\n'ConservativeMemes',\n'LibertarianMemes',\n'SocialismMemes',\n'Anarcho_CapitalismMemes',\n'Animeme',\n'MangaMemes',\n'WeebMemes',\n'AnimeFunny',\n'AnimeMeme',\n'AnimeComedy',\n'HentaiMemes',\n'waifumemes',\n'YugiohMemes',\n'NarutoMemes',\n'DBZMemes',\n'OnePieceMemes',\n'BleachMemes',\n'DemonSlayerMemes',\n'JujutsuKaisenMemes',\n'ChainsawManMemes',\n'BerserkMemes',\n'AttackOnTitanMemes',\n'EvangelionMemes',\n'GundamMemes',\n'MyHeroMemes',\n'IndianDankMemes',\n'IndiaMain',\n'BakchodIndia',\n'India_2',\n'IndianMemeCommunity',\n'IndianMemes',\n'DesiMemes',\n'RandiaMemes',\n'DesiDankMemes',\n'IndianMemePage',\n'IndianMemeHub',\n'IndianMemesDaily',\n'BharatMemes',\n'DesiMemeCulture',\n'IndiaMemeSociety',\n'IndianHumor',\n'DesiMemeLords',\n'IndianComedy',\n'IndiaMemers',\n'BharatiyaMemes'\n]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "180eecd1-833e-40b3-9722-b1dac0837cf7",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        448,
+        480
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "bc4500e0-1c80-4eca-9076-41f572ff3150",
+      "name": "Loop Posts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1456,
+        480
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cfd7c29e-864b-4241-a089-b633eac3fef1",
+              "operator": {
+                "type": "number",
+                "operation": "notExists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Search image in drive').item.json.id }}",
+              "rightValue": "="
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "50f185d0-05b8-4691-b4b4-ac3d191e6052",
+      "name": "Is a new image?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2352,
+        688
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "image",
+        "name": "= {{ $('Image variables').item.json.image_name }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1HLq_EJHE3g6vHkyDiMQ_zNErknB1_fxW",
+          "mode": "list",
+          "cachedResultName": "test",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1HLq_EJHE3g6vHkyDiMQ_zNErknB1_fxW"
+        },
+        "options": {}
+      },
+      "id": "9981e705-3eff-42bb-96cb-0e4925293a0f",
+      "name": "Upload image to drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2960,
+        864
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uw5lShkY0TIsrq89",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "21de95d6-92b3-467b-9a7f-90aa256d99d2",
+              "name": "image_url",
+              "type": "string",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "id": "4a6236f2-dd29-49dd-a10b-bf2f1b7fef09",
+              "name": "image_name",
+              "type": "string",
+              "value": "={{ $json.url.split(\"/\")[3] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cb81e733-949c-4ac9-a8f0-6656193c3bf8",
+      "name": "Image variables",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1904,
+        656
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.image_name }}",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1Lz2BPEoaQwPWLcW6hWAf-MVxOzp9zbK1",
+            "mode": "list",
+            "cachedResultName": "teste memes",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1Lz2BPEoaQwPWLcW6hWAf-MVxOzp9zbK1"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {
+          "fields": []
+        }
+      },
+      "id": "125560e5-ac6d-49bc-9163-b11fd006ca50",
+      "name": "Search image in drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2144,
+        656
+      ],
+      "typeVersion": 3,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uw5lShkY0TIsrq89",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "47d10e15-795b-449a-ac76-262b0850ae3d",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.url.split(\"/\")[2] }}",
+              "rightValue": "={{ $('Settings').item.json.image_base_url }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0d25e1fb-da97-4f82-bfb5-27dda8f1109c",
+      "name": "Keep only images",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        1232,
+        480
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "subreddit": "={{ $json.subreddit }}",
+        "filters": {
+          "category": "new"
+        }
+      },
+      "id": "b68b6804-1426-4b2e-9301-f6265ea74c8c",
+      "name": "Get Reddit posts",
+      "type": "n8n-nodes-base.reddit",
+      "position": [
+        1024,
+        480
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "redditOAuth2Api": {
+          "id": "OfZj8XaFG2Fuio6Y",
+          "name": "Reddit account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const subreddits = $input.first().json.subreddits_array\nconst randomIndex = Math.floor(Math.random() * subreddits.length)\nconst subreddit = subreddits[randomIndex]\n\nreturn [{ json: { subreddit } }]"
+      },
+      "id": "cd7a2444-eb64-4eaa-a5d9-11780f10c666",
+      "name": "Get random subreddit",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        784,
+        480
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Settings').item.json.wait_in_seconds }}"
+      },
+      "id": "2bffcab4-4b55-4381-9068-c71b98bd0eaf",
+      "name": "Wait between requests",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        1680,
+        608
+      ],
+      "webhookId": "850b52c1-da45-41ee-abad-60db39f0d176",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "baa17736-88f3-43d4-9642-94b8b06c9e18",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.createdTime }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "id": "6be21d20-64c2-439a-baf2-58e129cef17e",
+      "name": "Keep only new images",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        1680,
+        320
+      ],
+      "typeVersion": 2.2,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "d04db27a-065b-47c3-aec6-1b144f3621e8",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.new_images }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6edf1d1d-e8f2-46b7-bb2e-afa0cc46e5d7",
+      "name": "Have new images?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2112,
+        320
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "new_images",
+        "options": {}
+      },
+      "id": "e1961c40-c372-4e82-9729-54f61249821c",
+      "name": "Aggregate new images",
+      "type": "n8n-nodes-base.aggregate",
+      "position": [
+        1904,
+        320
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "6288372897",
+        "file": "={{ $json.new_images[0].thumbnailLink }}",
+        "additionalFields": {}
+      },
+      "id": "dce71f72-ec6e-4b06-8707-b1dfcffe3a60",
+      "name": "Notify on Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2592,
+        208
+      ],
+      "webhookId": "c28255b7-0343-4361-866e-85a35b449759",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "GgjnlhfcV3wamg0k",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "=6288372897",
+        "text": "=No new images downloaded from Reddit",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "d376cc2e-830d-47c5-8ccc-b4a422605ed1",
+      "name": "Send no new images text",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2400,
+        352
+      ],
+      "webhookId": "c28255b7-0343-4361-866e-85a35b449759",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "GgjnlhfcV3wamg0k",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "97ed3d74-8d56-4688-a522-16777aec8aed",
+      "name": "Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        112,
+        480
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 How It Works\n\nWorkflow execution flow:\n\n1. 🕐 Cron trigger starts the process\n2. 🎲 Randomly selects a subreddit from your list\n3. 📥 Fetches latest 30 posts from 'new' category\n4. 🖼️ Filters posts to keep only i.redd.it images\n5. 🔍 Checks Google Drive for existing images\n6. ⬇️ Downloads only new/unseen images\n7. 📤 Uploads new images to specified Drive folder\n8. 📱 Sends Telegram notification with results\n\n⚡ **Smart duplicate prevention saves bandwidth!**\n\n## 🔐 Required Credentials\n\nSet up these credential connections:\n\n**1️⃣ Reddit OAuth2 API:**\n• Create Reddit app at reddit.com/prefs/apps\n• Use 'script' type application\n• Note Client ID and Secret\n\n**2️⃣ Google Drive OAuth2:**\n• Enable Google Drive API in Google Cloud Console\n• Create OAuth2 credentials\n• Set appropriate scopes for file upload\n\n**3️⃣ Telegram Bot API:**\n• Create bot via @BotFather on Telegram\n• Get bot token and your chat ID\n• Test with /start command",
+        "height": 736,
+        "width": 400
+      },
+      "id": "63f66468-9fce-4820-8292-cd5f766dcb79",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -352,
+        -96
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# 📌 Follow me:\n## [LinkedIn](https://www.linkedin.com/in/vikthyr)",
+        "height": 112,
+        "width": 272
+      },
+      "id": "7fd7958a-00fa-4395-ab74-356044754459",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        64,
+        -96
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ Configuration Settings\n\nUpdate these variables in the Settings node:\n\n🔧 **Required Configuration:**\n• `telegram_chat_id`: Your Telegram chat ID for notifications\n• `subreddits_array`: List of subreddits to monitor\n  Example: `['memes', 'funny', 'pics']`\n\n⏱️ **Optional Settings:**\n• `wait_in_seconds`: Delay between requests (0.1s default)\n• `image_base_url`: Reddit image domain (i.redd.it)\n\n💡 **Tip:** Keep wait time low but respect Reddit's rate limits!",
+        "height": 512,
+        "width": 432,
+        "color": 7
+      },
+      "id": "3bb6d091-fee1-49aa-bcfd-df54dfb64369",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        112
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  return {\n    json: {\n      title: item.json.title\n    }\n  }\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2736,
+        320
+      ],
+      "id": "9f0c5c5b-d5bb-4f91-9854-47fb41606686",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2944,
+        368
+      ],
+      "id": "efd4f278-c1a2-460f-a51b-a0c21921350d",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "me",
+        "edge": "photos",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "=url",
+                "value": "={{ $('Get Reddit posts').item.json.url_overridden_by_dest }}"
+              },
+              {
+                "name": "message",
+                "value": "={{ $('Get Reddit posts').item.json.title }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        528
+      ],
+      "id": "e9eeb7e5-4d45-48fe-b883-c8204795d32e",
+      "name": "Facebook Graph API",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "u0jEfB8VlfBIdbR8",
+          "name": "post"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "6288372897",
+        "text": "={{ $('Keep only images').item.json.title }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2320,
+        144
+      ],
+      "id": "7d9b4bbe-4d45-4d3e-ae00-6f2e5f05c271",
+      "name": "Send a text message",
+      "webhookId": "706640c6-f6b7-4ef8-a0d3-a4afe5112970",
+      "credentials": {
+        "telegramApi": {
+          "id": "GgjnlhfcV3wamg0k",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.image_name }}",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1Lz2BPEoaQwPWLcW6hWAf-MVxOzp9zbK1",
+            "mode": "list",
+            "cachedResultName": "teste memes",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1Lz2BPEoaQwPWLcW6hWAf-MVxOzp9zbK1"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "id": "a3fbc85a-0df7-4b45-8a4c-b6f9d11f48a2",
+      "name": "Search image in drive1",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2304,
+        1104
+      ],
+      "typeVersion": 3,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "uw5lShkY0TIsrq89",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cfd7c29e-864b-4241-a089-b633eac3fef1",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $('Search image in drive').item.json.id }} ",
+              "rightValue": "={{ $('Image variables').item.json.image_name }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "472a9f6d-8011-4c2b-bf8d-8e4ce75ba201",
+      "name": "Is a new image?1",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2656,
+        1168
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        1056
+      ],
+      "id": "4a3da5c1-d903-46fa-804e-6414e0c351b7",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2896,
+        1216
+      ],
+      "id": "891cd49f-e55f-44ea-99ef-fd30566b1023",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        1120
+      ],
+      "id": "210bfbc8-b945-4cf8-a7b4-3c8470749e7d",
+      "name": "Wait",
+      "webhookId": "b3876ac9-0b14-4bfe-b504-3310a11eb4c4"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Image variables').item.json.image_url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "redditOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "image/webp,image/apng,image/*,*/*;q=0.8"
+            },
+            {
+              "name": "download",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "image"
+            }
+          }
+        }
+      },
+      "id": "e7aa8d98-87db-4ca6-8967-f79162d215eb",
+      "name": "Download image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2720,
+        816
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "redditOAuth2Api": {
+          "id": "OfZj8XaFG2Fuio6Y",
+          "name": "Reddit account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {
+    "Cron": [
+      {
+        "json": {
+          "timestamp": "2025-10-13T21:29:42.127+06:00",
+          "Readable date": "October 13th 2025, 9:29:42 pm",
+          "Readable time": "9:29:42 pm",
+          "Day of week": "Monday",
+          "Year": "2025",
+          "Month": "October",
+          "Day of month": "13",
+          "Hour": "21",
+          "Minute": "29",
+          "Second": "42",
+          "Timezone": "Asia/Dhaka (UTC+06:00)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "Get random subreddit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Posts": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait between requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image variables": {
+      "main": [
+        [
+          {
+            "node": "Search image in drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a new image?": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Reddit posts": {
+      "main": [
+        [
+          {
+            "node": "Keep only images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Have new images?": {
+      "main": [
+        [
+          {
+            "node": "Notify on Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send no new images text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep only images": {
+      "main": [
+        [
+          {
+            "node": "Loop Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate new images": {
+      "main": [
+        [
+          {
+            "node": "Have new images?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get random subreddit": {
+      "main": [
+        [
+          {
+            "node": "Get Reddit posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep only new images": {
+      "main": [
+        [
+          {
+            "node": "Aggregate new images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search image in drive": {
+      "main": [
+        [
+          {
+            "node": "Is a new image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image to drive": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait between requests": {
+      "main": [
+        [
+          {
+            "node": "Image variables",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Keep only new images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a new image?1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download image": {
+      "main": [
+        [
+          {
+            "node": "Upload image to drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "db4d4037-199d-4ad5-9578-96337f1e2485",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6b2a2792e2084f88b89d6812f64e6f6c7bdb546497b8eaa54b089f29de94d05d"
+  },
+  "id": "b6gGx5qDnypqKtDJ",
+  "tags": []
+}

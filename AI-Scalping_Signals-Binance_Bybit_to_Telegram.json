@@ -1,0 +1,835 @@
+{
+  "name": "trade",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa98039c-fadf-49a6-af42-73f59122938e",
+              "name": "symbol",
+              "value": "={{ $json.pair }}",
+              "type": "string"
+            },
+            {
+              "id": "f60d4c64-b69d-467a-a984-f3ac5a8a9006",
+              "name": "interval",
+              "value": "5m",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        -80
+      ],
+      "id": "f34f66e9-72c3-4af3-863d-938af3ddbf4d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// Input: items[0].json contains the Binance klines array from HTTP Request\n// ===============================\n\nconst raw = $('5mc').first().json.body;\nlet klines = raw;\n\n// In some APIs, data is under `body`\nif (raw && raw.body && Array.isArray(raw.body)) {\n  klines = raw.body;\n}\n\n// ===============================\n// Parse klines into usable objects\n// ===============================\nconst candles = klines.map(k => ({\n  time: k[0],\n  open: parseFloat(k[1]),\n  high: parseFloat(k[2]),\n  low: parseFloat(k[3]),\n  close: parseFloat(k[4]),\n  volume: parseFloat(k[5]),\n  closeTime: k[6],\n  quoteVolume: parseFloat(k[7]),\n  trades: parseInt(k[8]),\n  takerBaseVol: parseFloat(k[9]),\n  takerQuoteVol: parseFloat(k[10])\n}));\n\n// ===============================\n// Helper: EMA\n// ===============================\nfunction computeEMA(values, period) {\n  const k = 2 / (period + 1);\n  let emaArray = [];\n  let prevEma = values.slice(0, period).reduce((s, v) => s + v, 0) / period;\n  emaArray[period - 1] = prevEma;\n  for (let i = period; i < values.length; i++) {\n    prevEma = values[i] * k + prevEma * (1 - k);\n    emaArray[i] = prevEma;\n  }\n  return emaArray;\n}\n\n// ===============================\n// Helper: RSI\n// ===============================\nfunction computeRSI(closes, period = 14) {\n  let gains = [], losses = [];\n  for (let i = 1; i < closes.length; i++) {\n    const change = closes[i] - closes[i - 1];\n    gains.push(Math.max(0, change));\n    losses.push(Math.max(0, -change));\n  }\n  let avgGain = gains.slice(0, period).reduce((s, v) => s + v, 0) / period;\n  let avgLoss = losses.slice(0, period).reduce((s, v) => s + v, 0) / period;\n  let rsi = [];\n  rsi[period] = 100 - (100 / (1 + (avgGain / (avgLoss || 0.00001))));\n  for (let i = period; i < gains.length; i++) {\n    avgGain = (avgGain * (period - 1) + gains[i]) / period;\n    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;\n    const rs = avgGain / (avgLoss || 0.00001);\n    rsi[i + 1] = 100 - (100 / (1 + rs));\n  }\n  return rsi;\n}\n\n// ===============================\n// Helper: ATR\n// ===============================\nfunction computeATR(highs, lows, closes, period = 14) {\n  let trs = [];\n  for (let i = 0; i < highs.length; i++) {\n    if (i === 0) {\n      trs.push(highs[i] - lows[i]);\n    } else {\n      trs.push(Math.max(\n        highs[i] - lows[i],\n        Math.abs(highs[i] - closes[i - 1]),\n        Math.abs(lows[i] - closes[i - 1])\n      ));\n    }\n  }\n  let atr = [];\n  let sum = trs.slice(0, period).reduce((s, v) => s + v, 0);\n  atr[period - 1] = sum / period;\n  for (let i = period; i < trs.length; i++) {\n    atr[i] = (atr[i - 1] * (period - 1) + trs[i]) / period;\n  }\n  return atr;\n}\n\n// ===============================\n// Compute Indicators\n// ===============================\nconst closes = candles.map(c => c.close);\nconst highs = candles.map(c => c.high);\nconst lows = candles.map(c => c.low);\n\nconst ema20 = computeEMA(closes, 20);\nconst ema50 = computeEMA(closes, 50);\nconst rsi = computeRSI(closes, 14);\nconst atr = computeATR(highs, lows, closes, 14);\n\nconst lastIndex = candles.length - 1;\n\n// ===============================\n// Add latest indicator values\n// ===============================\nconst indicators = {\n  last_close: closes[lastIndex],\n  ema20: ema20[lastIndex] || null,\n  ema50: ema50[lastIndex] || null,\n  rsi: rsi[lastIndex] || null,\n  atr: atr[lastIndex] || null,\n  avgVolume: candles.slice(-20).reduce((s, c) => s + c.volume, 0) / 20,\n  avgTrades: candles.slice(-20).reduce((s, c) => s + c.trades, 0) / 20\n};\n\n// ===============================\n// Prepare the output for OpenAI\n// ===============================\nreturn [\n  {\n    json: {\n      candles,\n      indicators,\n      meta: {\n        symbol: $('Edit Fields').first().json.symbol,\n        interval: $('Edit Fields').first().json.interval\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -256
+      ],
+      "id": "35b5d00e-5a30-4823-b236-3ce949680543",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a professional crypto scalper and technical analyst.\n\nAnalyze the following structured data by comparing it against top, time-tested scalping strategies and applying AI-weighted logic to prioritize higher-probability signals.\n\nPopular Scalping Strategies to Reference:\n- EMA crossover (fast vs. slow, e.g., 9/21 or 20/50)\n- RSI overbought/oversold zones\n- Bollinger Band bounce/breakout\n- VWAP support/resistance reaction\n- MACD momentum direction and histogram confirmation\n- Volume spikes confirming direction\n- ATR-based volatility confirmation\n\nWeighting Logic (AI priority scoring):\n- EMA & MACD alignment → weight: 35%\n- RSI confirmation (30–70 breakout or rebound) → weight: 20%\n- Volume + VWAP confluence → weight: 20%\n- Bollinger Band + ATR volatility → weight: 15%\n- Market structure and recent candle pattern → weight: 10%\n\nObjective:\nDetermine the highest-confidence, short-term scalping opportunity with precise entry, take-profit, and stop-loss levels.\n\nmy Indicators recommendation signal:{{ $('5m').item.json['5mtr'] }}\n\n\nDATA of for 5m chart:\nSymbol: {{ $('Edit Fields').item.json.symbol }}\nTimeframe: {{ $('Edit Fields').item.json.interval }}\nCandles (most recent 100 bars):\n{{ $('5m').item.json['5mc'] }}\nIndicators (latest values):{{ $('5m').item.json['5min'] }}\n\n\n\nDATA of for 15m chart:\nSymbol: {{ $('Edit Fields').item.json.symbol }}\nTimeframe: 15m\nCandles (most recent 100 bars):\n{{ $json['15mc'] }}\nIndicators (latest values):{{ $json['15min'] }}\n\n\n\nRules:\n- Combine weighted results from the above strategies.\n- Only issue a LONG or SHORT signal when 60%+ of weighted strategies align.\n- If conditions conflict or volatility is low → output NO_TRADE.\n- Prefer short-term setups (scalping focus, tight stops, quick take profits).\n- Return ONLY valid JSON (no extra commentary).\n\nOUTPUT FORMAT (strict JSON):\n{\n  \"recommendation\": \"LONG\" | \"SHORT\" | \"NO_TRADE\",\n  \"confidence\": 0-100,\n  \"reason\": \"string (one or two sentences, concise and factual)\",\n  \"take_entry\": numeric_price,\n  \"take_profit\": numeric_price,\n  \"stop_loss\": numeric_price\n}\n\nGuidelines:\n- \"recommendation\" must be either LONG, SHORT, or NO_TRADE.\n- \"take_profit\" and \"stop_loss\" must be numeric absolute price levels based on recent candles.\n- \"confidence\" reflects the AI-weighted confluence of signals.\n- If \"recommendation\" = \"NO_TRADE\", set take_profit and stop_loss = 0.\n- Keep \"reason\" under 120 characters.\n"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        -112
+      ],
+      "id": "71b264e7-3cdc-42f0-b89c-f981b8b87698",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RA9sSKOopMNu3wtD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6288372897",
+        "text": "={{ $json.content.parts[0].text }}{{ $('Code in JavaScript').item.json.meta.symbol }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1712,
+        32
+      ],
+      "id": "c208c9e4-a1ba-4190-9034-683980d02fde",
+      "name": "Send a text message",
+      "webhookId": "d648abae-91e3-4867-a303-610bdc26b87c",
+      "credentials": {
+        "telegramApi": {
+          "id": "Am7rU3uv7WoKfRim",
+          "name": "trade"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// List of Binance Futures USDT trading pairs\nconst tradingPairs = [\n      \"SUNUSDT\",\n      \"DOGSUSDT\",\n      \"MBOXUSDT\",\n      \"CHESSUSDT\",\n      \"FLUXUSDT\",\n      \"QUICKUSDT\",\n      \"RPLUSDT\",\n      \"POLUSDT\",\n      \"1MBABYDOGEUSDT\",\n      \"NEIROUSDT\",\n      \"KDAUSDT\",\n      \"FIDAUSDT\",\n      \"FIOUSDT\",\n      \"CATIUSDT\",\n      \"GHSTUSDT\",\n      \"HMSTRUSDT\",\n      \"REIUSDT\",\n      \"COSUSDT\",\n      \"EIGENUSDT\",\n      \"DIAUSDT\",\n      \"SCRUSDT\",\n      \"SANTOSUSDT\",\n      \"COWUSDT\",\n      \"CETUSUSDT\",\n      \"DRIFTUSDT\",\n      \"SWELLUSDT\",\n      \"ACTUSDT\",\n      \"PNUTUSDT\",\n      \"HIPPOUSDT\",\n      \"DEGENUSDT\",\n      \"BANUSDT\",\n      \"AKTUSDT\",\n      \"SLERFUSDT\",\n      \"SCRTUSDT\",\n      \"THEUSDT\",\n      \"MORPHOUSDT\",\n      \"CHILLGUYUSDT\",\n      \"KAIAUSDT\",\n      \"AEROUSDT\",\n      \"ACXUSDT\",\n      \"ORCAUSDT\",\n      \"MOVEUSDT\",\n      \"RAYSOLUSDT\",\n      \"KOMAUSDT\",\n      \"VIRTUALUSDT\",\n      \"SPXUSDT\",\n      \"MEUSDT\",\n      \"AVAUSDT\",\n      \"DEGOUSDT\",\n      \"VELODROMEUSDT\",\n      \"MOCAUSDT\",\n      \"VANAUSDT\",\n      \"PENGUUSDT\",\n      \"LUMIAUSDT\",\n      \"USUALUSDT\",\n      \"AIXBTUSDT\",\n      \"FARTCOINUSDT\",\n      \"KMNOUSDT\",\n      \"CGPTUSDT\",\n      \"HIVEUSDT\",\n      \"DEXEUSDT\",\n      \"PHAUSDT\",\n      \"DFUSDT\",\n      \"GRIFFAINUSDT\",\n      \"AI16ZUSDT\",\n      \"ZEREBROUSDT\",\n      \"BIOUSDT\",\n      \"COOKIEUSDT\",\n      \"ALCHUSDT\",\n      \"SWARMSUSDT\",\n      \"SONICUSDT\",\n      \"DUSDT\",\n      \"PROMUSDT\",\n      \"SUSDT\",\n      \"SOLVUSDT\",\n      \"ARCUSDT\",\n      \"AVAAIUSDT\",\n      \"TRUMPUSDT\",\n      \"MELANIAUSDT\",\n      \"VTHOUSDT\",\n      \"ANIMEUSDT\",\n      \"VINEUSDT\",\n      \"PIPPINUSDT\",\n      \"VVVUSDT\",\n      \"BERAUSDT\",\n      \"TSTUSDT\",\n      \"LAYERUSDT\",\n      \"HEIUSDT\",\n      \"B3USDT\",\n      \"IPUSDT\",\n      \"GPSUSDT\",\n      \"SHELLUSDT\",\n      \"KAITOUSDT\",\n      \"KAITOUSDC\",\n      \"IPUSDC\",\n      \"TRUMPUSDC\",\n      \"ADAUSDC\",\n      \"REDUSDT\",\n      \"PNUTUSDC\",\n      \"HBARUSDC\",\n      \"VICUSDT\",\n      \"EPICUSDT\",\n      \"BMTUSDT\",\n      \"MUBARAKUSDT\",\n      \"FORMUSDT\",\n      \"BIDUSDT\",\n      \"TUTUSDT\",\n      \"BROCCOLI714USDT\",\n      \"BROCCOLIF3BUSDT\",\n      \"SIRENUSDT\",\n      \"BANANAS31USDT\",\n      \"BRUSDT\",\n      \"PLUMEUSDT\",\n      \"NILUSDT\",\n      \"PARTIUSDT\",\n      \"JELLYJELLYUSDT\",\n      \"MAVIAUSDT\",\n      \"PAXGUSDT\",\n      \"WALUSDT\",\n      \"FUNUSDT\",\n      \"MLNUSDT\",\n      \"GUNUSDT\",\n      \"ATHUSDT\",\n      \"BABYUSDT\",\n      \"FORTHUSDT\",\n      \"PROMPTUSDT\",\n      \"XCNUSDT\",\n      \"STOUSDT\",\n      \"FHEUSDT\",\n      \"KERNELUSDT\",\n      \"WCTUSDT\",\n      \"INITUSDT\",\n      \"AERGOUSDT\",\n      \"BANKUSDT\",\n      \"EPTUSDT\",\n      \"DEEPUSDT\",\n      \"HYPERUSDT\",\n      \"FISUSDT\",\n      \"JSTUSDT\",\n      \"SIGNUSDT\",\n      \"PUNDIXUSDT\",\n      \"CTKUSDT\",\n      \"AIOTUSDT\",\n      \"DOLOUSDT\",\n      \"HAEDALUSDT\",\n      \"SXTUSDT\",\n      \"ASRUSDT\",\n      \"ALPINEUSDT\",\n      \"B2USDT\",\n      \"MILKUSDT\",\n      \"SYRUPUSDT\",\n      \"OBOLUSDT\",\n      \"DOODUSDT\",\n      \"OGUSDT\",\n      \"ZKJUSDT\",\n      \"SKYAIUSDT\",\n      \"NXPCUSDT\",\n      \"CVCUSDT\",\n      \"AGTUSDT\",\n      \"AWEUSDT\",\n      \"BUSDT\",\n      \"SOONUSDT\",\n      \"HUMAUSDT\",\n      \"AUSDT\",\n      \"SOPHUSDT\",\n      \"MERLUSDT\",\n      \"HYPEUSDT\",\n      \"BDXNUSDT\",\n      \"PUFFERUSDT\",\n      \"PORT3USDT\",\n      \"1000000BOBUSDT\",\n      \"LAUSDT\",\n      \"SKATEUSDT\",\n      \"HOMEUSDT\",\n      \"RESOLVUSDT\",\n      \"TAIKOUSDT\",\n      \"SQDUSDT\",\n      \"PUMPBTCUSDT\",\n      \"AAVEUSDC\",\n      \"UNIUSDC\",\n      \"SPKUSDT\",\n      \"MYXUSDT\",\n      \"FUSDT\",\n      \"NEWTUSDT\",\n      \"DMCUSDT\",\n      \"HUSDT\",\n      \"OLUSDT\",\n      \"SAHARAUSDT\",\n      \"BTCUSDT_251226\",\n      \"ETHUSDT_251226\",\n      \"ICNTUSDT\",\n      \"BULLAUSDT\",\n      \"IDOLUSDT\",\n      \"MUSDT\",\n      \"TANSSIUSDT\",\n      \"PUMPUSDT\",\n      \"CROSSUSDT\",\n      \"AINUSDT\",\n      \"CUSDT\",\n      \"VELVETUSDT\",\n      \"TACUSDT\",\n      \"ERAUSDT\",\n      \"TAUSDT\",\n      \"PENGUUSDC\",\n      \"CVXUSDT\",\n      \"SLPUSDT\",\n      \"ZORAUSDT\",\n      \"TAGUSDT\",\n      \"ZRCUSDT\",\n      \"ESPORTSUSDT\",\n      \"TREEUSDT\",\n      \"A2ZUSDT\",\n      \"PLAYUSDT\",\n      \"NAORISUSDT\",\n      \"TOWNSUSDT\",\n      \"PROVEUSDT\",\n      \"ALLUSDT\",\n      \"INUSDT\",\n      \"YALAUSDT\",\n      \"CARVUSDT\",\n      \"AIOUSDT\",\n      \"XNYUSDT\",\n      \"USELESSUSDT\",\n      \"DAMUSDT\",\n      \"CUDISUSDT\",\n      \"SAPIENUSDT\",\n      \"XPLUSDT\",\n      \"WLFIUSDT\",\n      \"BIOUSDC\",\n      \"SOMIUSDT\",\n      \"BASUSDT\",\n      \"BTRUSDT\",\n      \"MITOUSDT\",\n      \"HEMIUSDT\",\n      \"LINEAUSDT\",\n      \"QUSDT\",\n      \"ARIAUSDT\",\n      \"TAKEUSDT\",\n      \"PTBUSDT\",\n      \"WLFIUSDC\",\n      \"OPENUSDT\",\n      \"FLOCKUSDT\",\n      \"SKYUSDT\",\n      \"AVNTUSDT\",\n      \"HOLOUSDT\",\n      \"XPINUSDT\",\n      \"UBUSDT\",\n      \"ZKCUSDT\",\n      \"TOSHIUSDT\",\n      \"STBLUSDT\",\n      \"0GUSDT\",\n      \"AIAUSDT\",\n      \"BARDUSDT\",\n      \"ASTERUSDT\",\n      \"TRADOORUSDT\",\n      \"BLESSUSDT\",\n      \"FLUIDUSDT\",\n      \"COAIUSDT\",\n      \"HANAUSDT\",\n      \"MIRAUSDT\",\n      \"AKEUSDT\",\n      \"ORDERUSDT\",\n      \"LIGHTUSDT\",\n      \"XANUSDT\",\n      \"FFUSDT\",\n      \"VFYUSDT\",\n      \"EDENUSDT\",\n      \"NOMUSDT\",\n      \"TRUTHUSDT\",\n      \"2ZUSDT\",\n      \"EVAAUSDT\",\n      \"LYNUSDT\",\n      \"KGENUSDT\",\n      \"4USDT\",\n      \"GIGGLEUSDT\",\n      \"MONUSDT\",\n      \"YBUSDT\",\n      \"METUSDT\",\n      \"EULUSDT\",\n      \"ENSOUSDT\",\n      \"CLOUSDT\"\n];\n\n// Output each pair on a new line\nconsole.log(tradingPairs.join('\\n'));\n\n// For n8n Function node: array of items\nconst items = tradingPairs.map(p => ({ json: { pair: p } }));\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        -176
+      ],
+      "id": "869b88b6-9749-4c30-8e3a-5f818a7b85ba",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -288,
+        48
+      ],
+      "id": "272e1e41-8810-4406-9ee6-e2f87f8c9f98",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        496
+      ],
+      "id": "ad23961f-4494-4e5f-a9dc-910259cbbba9",
+      "name": "Wait1",
+      "webhookId": "ec3c32f4-63f5-417c-8501-c98da80f4e77",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==========================================\n// 🔹 AI-Enhanced Scalping Signal Generator\n// ==========================================\n\n// Get candles from input - handling different possible input formats\nlet inputData = $input.first().json.body;\n\n// Extract candles array from possible input formats\nlet candles;\nif (inputData && inputData.body && Array.isArray(inputData.body)) {\n  candles = inputData.body;\n} else if (Array.isArray(inputData)) {\n  candles = inputData;\n} else {\n  candles = $input.all().map(item => item.json);\n}\n\n// Validate input\nif (!candles || !Array.isArray(candles) || candles.length < 50) {\n  return [{ json: { error: \"Invalid or insufficient candle data. Need at least 50 candles.\" } }];\n}\n\n// ========== Data Parsing Function ==========\nfunction parseCandle(candle) {\n  // Handle different candle formats\n  if (Array.isArray(candle)) {\n    // Format: [timestamp, open, high, low, close, volume, ...]\n    return {\n      timestamp: candle[0],\n      open: parseFloat(candle[1]),\n      high: parseFloat(candle[2]),\n      low: parseFloat(candle[3]),\n      close: parseFloat(candle[4]),\n      volume: parseFloat(candle[5])\n    };\n  } else if (typeof candle === 'string') {\n    // Format: \"timestamp,open,high,low,close,volume,...\"\n    const parts = candle.split(',');\n    return {\n      timestamp: parseInt(parts[0]),\n      open: parseFloat(parts[1]),\n      high: parseFloat(parts[2]),\n      low: parseFloat(parts[3]),\n      close: parseFloat(parts[4]),\n      volume: parseFloat(parts[5])\n    };\n  } else if (candle.open && candle.high && candle.low && candle.close) {\n    // Already in object format\n    return {\n      timestamp: candle.timestamp || Date.now(),\n      open: parseFloat(candle.open),\n      high: parseFloat(candle.high),\n      low: parseFloat(candle.low),\n      close: parseFloat(candle.close),\n      volume: parseFloat(candle.volume || 0)\n    };\n  }\n  \n  throw new Error('Unknown candle format');\n}\n\n// Parse all candles\nlet parsedCandles;\ntry {\n  parsedCandles = candles.map(parseCandle);\n} catch (error) {\n  return [{ json: { error: \"Failed to parse candle data: \" + error.message } }];\n}\n\n// ========== Indicator Functions ==========\n\n// EMA Calculation\nfunction computeEMA(values, period) {\n  if (values.length < period) return [];\n  const k = 2 / (period + 1);\n  let ema = Array(values.length).fill(null);\n  let sum = 0;\n  for (let i = 0; i < period; i++) sum += values[i];\n  let prev = sum / period;\n  ema[period - 1] = prev;\n  for (let i = period; i < values.length; i++) {\n    prev = values[i] * k + prev * (1 - k);\n    ema[i] = prev;\n  }\n  return ema;\n}\n\n// RSI Calculation\nfunction computeRSI(closes, period = 14) {\n  if (closes.length <= period) return [];\n  const rsi = Array(closes.length).fill(null);\n  const gains = [], losses = [];\n  for (let i = 1; i < closes.length; i++) {\n    const diff = closes[i] - closes[i - 1];\n    gains.push(diff > 0 ? diff : 0);\n    losses.push(diff < 0 ? -diff : 0);\n  }\n  let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;\n  let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;\n  rsi[period] = 100 - (100 / (1 + (avgGain / (avgLoss || 0.00001))));\n  for (let i = period; i < gains.length; i++) {\n    avgGain = (avgGain * (period - 1) + gains[i]) / period;\n    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;\n    const rs = avgGain / (avgLoss || 0.00001);\n    rsi[i + 1] = 100 - (100 / (1 + rs));\n  }\n  return rsi;\n}\n\n// ATR Calculation\nfunction computeATR(highs, lows, closes, period = 14) {\n  if (highs.length <= period) return [];\n  const trs = [];\n  for (let i = 0; i < highs.length; i++) {\n    if (i === 0) {\n      trs.push(highs[i] - lows[i]);\n    } else {\n      const tr = Math.max(\n        highs[i] - lows[i],\n        Math.abs(highs[i] - closes[i - 1]),\n        Math.abs(lows[i] - closes[i - 1])\n      );\n      trs.push(tr);\n    }\n  }\n  const atr = Array(trs.length).fill(null);\n  let sum = trs.slice(0, period).reduce((a, b) => a + b, 0);\n  atr[period - 1] = sum / period;\n  for (let i = period; i < trs.length; i++) {\n    atr[i] = (atr[i - 1] * (period - 1) + trs[i]) / period;\n  }\n  return atr;\n}\n\n// ========== Indicator Data Preparation ==========\n\nconst closes = parsedCandles.map(c => c.close);\nconst highs = parsedCandles.map(c => c.high);\nconst lows = parsedCandles.map(c => c.low);\nconst volumes = parsedCandles.map(c => c.volume);\n\nconst ema20 = computeEMA(closes, 20);\nconst ema50 = computeEMA(closes, 50);\nconst rsi14 = computeRSI(closes, 14);\nconst atr14 = computeATR(highs, lows, closes, 14);\n\n// ========== Helper Functions ==========\n\nfunction volumeSpike(index, lookback = 20, factor = 2.0) {\n  if (index < lookback) return false;\n  const slice = volumes.slice(index - lookback, index);\n  const avg = slice.reduce((a, b) => a + b, 0) / slice.length;\n  return volumes[index] > avg * factor;\n}\n\n// ========== Strong Signal Checkers ==========\n\nfunction checkStrongLong(i) {\n  if (i < 1) return false;\n  if (!(ema20[i] && ema50[i] && ema20[i] > ema50[i])) return false;\n  if (!(rsi14[i] && rsi14[i] < 65)) return false;\n  if (!(closes[i - 1] < ema20[i - 1] && closes[i] > ema20[i])) return false;\n  if (!volumeSpike(i)) return false;\n  return true;\n}\n\nfunction checkStrongShort(i) {\n  if (i < 1) return false;\n  if (!(ema20[i] && ema50[i] && ema20[i] < ema50[i])) return false;\n  if (!(rsi14[i] && rsi14[i] > 35)) return false;\n  if (!(closes[i - 1] > ema20[i - 1] && closes[i] < ema20[i])) return false;\n  if (!volumeSpike(i)) return false;\n  return true;\n}\n\n// ========== Strategy Execution ==========\n\nconst lookbackWindow = 5;\nconst lastIdx = closes.length - 1;\n\nlet signal = {\n  recommendation: \"NO_TRADE\",\n  confidence: 0,\n  reason: \"No strong signals detected\",\n  take_entry: 0,\n  take_profit: 0,\n  stop_loss: 0,\n  timestamp: parsedCandles[lastIdx].timestamp,\n  current_price: closes[lastIdx]\n};\n\n// Check for signals in recent candles\nfor (let offset = 0; offset < lookbackWindow; offset++) {\n  const i = lastIdx - offset;\n  if (i < 1) continue;\n\n  if (checkStrongLong(i)) {\n    const entry = closes[i];\n    const atr = atr14[i];\n    if (!atr) continue;\n    const sl = entry - atr * 0.5;\n    const tp = entry + atr * 1.0;\n    signal = {\n      recommendation: \"LONG\",\n      confidence: 90,\n      reason: \"Strong long: EMA20 > EMA50 + RSI not overbought + EMA crossover + volume spike\",\n      take_entry: parseFloat(entry.toFixed(2)),\n      take_profit: parseFloat(tp.toFixed(2)),\n      stop_loss: parseFloat(sl.toFixed(2)),\n      timestamp: parsedCandles[i].timestamp,\n      current_price: parseFloat(closes[i].toFixed(2))\n    };\n    break;\n  }\n\n  if (checkStrongShort(i)) {\n    const entry = closes[i];\n    const atr = atr14[i];\n    if (!atr) continue;\n    const sl = entry + atr * 0.5;\n    const tp = entry - atr * 1.0;\n    signal = {\n      recommendation: \"SHORT\",\n      confidence: 90,\n      reason: \"Strong short: EMA20 < EMA50 + RSI not oversold + EMA crossover + volume spike\",\n      take_entry: parseFloat(entry.toFixed(2)),\n      take_profit: parseFloat(tp.toFixed(2)),\n      stop_loss: parseFloat(sl.toFixed(2)),\n      timestamp: parsedCandles[i].timestamp,\n      current_price: parseFloat(closes[i].toFixed(2))\n    };\n    break;\n  }\n}\n\n// ========== Output ==========\n\nreturn [\n  {\n    json: {\n      signal,\n      indicators: {\n        current_ema20: ema20[lastIdx] ? parseFloat(ema20[lastIdx].toFixed(2)) : null,\n        current_ema50: ema50[lastIdx] ? parseFloat(ema50[lastIdx].toFixed(2)) : null,\n        current_rsi: rsi14[lastIdx] ? parseFloat(rsi14[lastIdx].toFixed(2)) : null,\n        current_atr: atr14[lastIdx] ? parseFloat(atr14[lastIdx].toFixed(2)) : null\n      },\n      analysis_timestamp: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        -256
+      ],
+      "id": "244e12e8-931b-4e05-85b9-f061925e4394",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        288
+      ],
+      "id": "9ae5fb0d-83b4-45c4-a955-84be73a24ea5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=1&limit=100",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        752
+      ],
+      "id": "6895dcd3-f1c0-453b-aa37-0b5595876690",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// List of Binance Futures USDT trading pairs\nconst tradingPairs = [\n      \"BTCUSDT\",\n      \"ETHUSDT\",\n      \"BCHUSDT\",\n      \"XRPUSDT\",\n      \"LTCUSDT\",\n      \"TRXUSDT\",\n      \"ETCUSDT\",\n      \"LINKUSDT\",\n      \"XLMUSDT\",\n      \"ADAUSDT\",\n      \"XMRUSDT\",\n      \"DASHUSDT\",\n      \"ZECUSDT\",\n      \"XTZUSDT\",\n      \"BNBUSDT\",\n      \"ATOMUSDT\",\n      \"ONTUSDT\",\n      \"IOTAUSDT\",\n      \"BATUSDT\",\n      \"VETUSDT\",\n      \"NEOUSDT\",\n      \"QTUMUSDT\",\n      \"IOSTUSDT\",\n      \"THETAUSDT\",\n      \"ALGOUSDT\",\n      \"ZILUSDT\",\n      \"KNCUSDT\",\n      \"ZRXUSDT\",\n      \"COMPUSDT\",\n      \"DOGEUSDT\",\n      \"SXPUSDT\",\n      \"KAVAUSDT\",\n      \"BANDUSDT\",\n      \"RLCUSDT\",\n      \"SNXUSDT\",\n      \"DOTUSDT\",\n      \"YFIUSDT\",\n      \"CRVUSDT\",\n      \"TRBUSDT\",\n      \"RUNEUSDT\",\n      \"SUSHIUSDT\",\n      \"EGLDUSDT\",\n      \"SOLUSDT\",\n      \"ICXUSDT\",\n      \"STORJUSDT\",\n      \"UNIUSDT\",\n      \"AVAXUSDT\",\n      \"ENJUSDT\",\n      \"FLMUSDT\",\n      \"KSMUSDT\",\n      \"NEARUSDT\",\n      \"AAVEUSDT\",\n      \"FILUSDT\",\n      \"RSRUSDT\",\n      \"LRCUSDT\",\n      \"BELUSDT\",\n      \"AXSUSDT\",\n      \"ZENUSDT\",\n      \"SKLUSDT\",\n      \"GRTUSDT\",\n      \"1INCHUSDT\",\n      \"CHZUSDT\",\n      \"SANDUSDT\",\n      \"ANKRUSDT\",\n      \"RVNUSDT\",\n      \"SFPUSDT\",\n      \"COTIUSDT\",\n      \"CHRUSDT\",\n      \"MANAUSDT\",\n      \"ALICEUSDT\",\n      \"HBARUSDT\",\n      \"ONEUSDT\",\n      \"DENTUSDT\",\n      \"CELRUSDT\",\n      \"HOTUSDT\",\n      \"MTLUSDT\",\n      \"OGNUSDT\",\n      \"NKNUSDT\",\n      \"GTCUSDT\",\n      \"IOTXUSDT\",\n      \"C98USDT\",\n      \"MASKUSDT\",\n      \"ATAUSDT\",\n      \"DYDXUSDT\",\n      \"GALAUSDT\",\n      \"CELOUSDT\",\n      \"ARUSDT\",\n      \"ARPAUSDT\",\n      \"CTSIUSDT\",\n      \"LPTUSDT\",\n      \"ENSUSDT\",\n      \"PEOPLEUSDT\",\n      \"ROSEUSDT\",\n      \"DUSKUSDT\",\n      \"FLOWUSDT\",\n      \"IMXUSDT\",\n      \"API3USDT\",\n      \"GMTUSDT\",\n      \"APEUSDT\",\n      \"WOOUSDT\",\n      \"JASMYUSDT\",\n      \"OPUSDT\",\n      \"INJUSDT\",\n      \"STGUSDT\",\n      \"SPELLUSDT\",\n      \"LDOUSDT\",\n      \"ICPUSDT\",\n      \"APTUSDT\",\n      \"QNTUSDT\",\n      \"FETUSDT\",\n      \"FXSUSDT\",\n      \"HOOKUSDT\",\n      \"MAGICUSDT\",\n      \"TUSDT\",\n      \"HIGHUSDT\",\n      \"MINAUSDT\",\n      \"ASTRUSDT\",\n      \"PHBUSDT\",\n      \"GMXUSDT\",\n      \"CFXUSDT\",\n      \"STXUSDT\",\n      \"ACHUSDT\",\n      \"SSVUSDT\",\n      \"CKBUSDT\",\n      \"PERPUSDT\",\n      \"TRUUSDT\",\n      \"LQTYUSDT\",\n      \"IDUSDT\",\n      \"ARBUSDT\",\n      \"JOEUSDT\",\n      \"TLMUSDT\",\n      \"RDNTUSDT\",\n      \"HFTUSDT\",\n      \"XVSUSDT\",\n      \"BLURUSDT\",\n      \"EDUUSDT\",\n      \"SUIUSDT\",\n      \"UMAUSDT\",\n      \"NMRUSDT\",\n      \"MAVUSDT\",\n      \"XVGUSDT\",\n      \"WLDUSDT\",\n      \"PENDLEUSDT\",\n      \"ARKMUSDT\",\n      \"AGLDUSDT\",\n      \"YGGUSDT\",\n      \"BNTUSDT\",\n      \"OXTUSDT\",\n      \"SEIUSDT\",\n      \"CYBERUSDT\",\n      \"ARKUSDT\",\n      \"BICOUSDT\",\n      \"BIGTIMEUSDT\",\n      \"WAXPUSDT\",\n      \"RIFUSDT\",\n      \"POLYXUSDT\",\n      \"GASUSDT\",\n      \"POWRUSDT\",\n      \"TIAUSDT\",\n      \"CAKEUSDT\",\n      \"MEMEUSDT\",\n      \"TWTUSDT\",\n      \"ORDIUSDT\",\n      \"STEEMUSDT\",\n      \"ILVUSDT\",\n      \"NTRNUSDT\",\n      \"BEAMXUSDT\",\n      \"PYTHUSDT\",\n      \"SUPERUSDT\",\n      \"USTCUSDT\",\n      \"ONGUSDT\",\n      \"JTOUSDT\",\n      \"AUCTIONUSDT\",\n      \"ACEUSDT\",\n      \"MOVRUSDT\",\n      \"NFPUSDT\",\n      \"AIUSDT\",\n      \"XAIUSDT\",\n      \"WIFUSDT\",\n      \"MANTAUSDT\",\n      \"ONDOUSDT\",\n      \"LSKUSDT\",\n      \"ALTUSDT\",\n      \"JUPUSDT\",\n      \"RONINUSDT\",\n      \"DYMUSDT\",\n      \"SUIUSDC\",\n      \"OMUSDT\",\n      \"LINKUSDC\",\n      \"PIXELUSDT\",\n      \"STRKUSDT\",\n      \"ORDIUSDC\",\n      \"GLMUSDT\",\n      \"PORTALUSDT\",\n      \"TONUSDT\",\n      \"AXLUSDT\",\n      \"METISUSDT\",\n      \"AEVOUSDT\",\n      \"WLDUSDC\",\n      \"VANRYUSDT\",\n      \"BOMEUSDT\",\n      \"ETHFIUSDT\",\n      \"ENAUSDT\",\n      \"WUSDT\",\n      \"TNSRUSDT\",\n      \"SAGAUSDT\",\n      \"TAOUSDT\",\n      \"REZUSDT\",\n      \"BBUSDT\",\n      \"NOTUSDT\",\n      \"TURBOUSDT\",\n      \"IOUSDT\",\n      \"ZKUSDT\",\n      \"LISTAUSDT\",\n      \"ZROUSDT\",\n      \"CRVUSDC\",\n      \"RENDERUSDT\",\n      \"BANANAUSDT\",\n      \"RAREUSDT\",\n      \"GUSDT\",\n      \"SYNUSDT\",\n      \"SYSUSDT\",\n      \"VOXELUSDT\",\n      \"SUNUSDT\",\n      \"DOGSUSDT\",\n      \"MBOXUSDT\",\n      \"CHESSUSDT\",\n      \"FLUXUSDT\",\n      \"QUICKUSDT\",\n      \"RPLUSDT\",\n      \"POLUSDT\",\n      \"1MBABYDOGEUSDT\",\n      \"NEIROUSDT\",\n      \"KDAUSDT\",\n      \"FIDAUSDT\",\n      \"FIOUSDT\",\n      \"CATIUSDT\",\n      \"GHSTUSDT\",\n      \"HMSTRUSDT\",\n      \"REIUSDT\",\n      \"COSUSDT\",\n      \"EIGENUSDT\",\n      \"DIAUSDT\",\n      \"SCRUSDT\",\n      \"SANTOSUSDT\",\n      \"COWUSDT\",\n      \"CETUSUSDT\",\n];\n\n// Output each pair on a new line\nconsole.log(tradingPairs.join('\\n'));\n\n// For n8n Function node: array of items\nconst items = tradingPairs.map(p => ({ json: { pair: p } }));\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        0
+      ],
+      "id": "a90eb90a-62d6-45d0-8f68-9ac32f649b8f",
+      "name": "binance"
+    },
+    {
+      "parameters": {
+        "url": "https://api-demo.bybit.com/v5/market/instruments-info?category=linear",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1312,
+        624
+      ],
+      "id": "77e208f1-d211-4169-9728-e907d3173fb1",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fetch Bybit Futures (USDT-Perpetual) trading pairs\nconst url = 'https://api-demo.bybit.com/v5/market/instruments-info?category=linear';\n\nconst response = await this.helpers.httpRequest({\n  method: 'GET',\n  url,\n});\n\n// Extract only the symbols\nconst symbolsArray = response.result.list.map(item => item.symbol);\n\n// Return as a single JSON object with one array\nreturn [{ json: { symbols: symbolsArray } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        464
+      ],
+      "id": "32866654-f27c-499c-9045-5be084abab12",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "qty",
+              "value": 0.1
+            }
+          ],
+          "string": [
+            {
+              "name": "symbol",
+              "value": "BTCUSDT"
+            },
+            {
+              "name": "side",
+              "value": "Buy"
+            },
+            {
+              "name": "order_type",
+              "value": "Market"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Order Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        496
+      ],
+      "id": "b1c8ed93-cbab-4267-8eb1-093a77cd8f37"
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.qty }}",
+        "url": "={{ $json.qty }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1088,
+        784
+      ],
+      "id": "862ebb77-6024-41e7-8a90-9be31726d806",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.binance.com/api/v3/klines?symbol={{ $('Loop Over Items').item.json.pair }}&interval=15m&limit=100",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        208
+      ],
+      "id": "d8a94b82-0868-4b22-8392-0d4f56d373da",
+      "name": "15m"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==========================================\n// 🔹 AI-Enhanced Scalping Signal Generator\n// ==========================================\n\n// Get candles from input - handling different possible input formats\nlet inputData = $input.first().json.body;\n\n// Extract candles array from possible input formats\nlet candles;\nif (inputData && inputData.body && Array.isArray(inputData.body)) {\n  candles = inputData.body;\n} else if (Array.isArray(inputData)) {\n  candles = inputData;\n} else {\n  candles = $input.all().map(item => item.json);\n}\n\n// Validate input\nif (!candles || !Array.isArray(candles) || candles.length < 50) {\n  return [{ json: { error: \"Invalid or insufficient candle data. Need at least 50 candles.\" } }];\n}\n\n// ========== Data Parsing Function ==========\nfunction parseCandle(candle) {\n  // Handle different candle formats\n  if (Array.isArray(candle)) {\n    // Format: [timestamp, open, high, low, close, volume, ...]\n    return {\n      timestamp: candle[0],\n      open: parseFloat(candle[1]),\n      high: parseFloat(candle[2]),\n      low: parseFloat(candle[3]),\n      close: parseFloat(candle[4]),\n      volume: parseFloat(candle[5])\n    };\n  } else if (typeof candle === 'string') {\n    // Format: \"timestamp,open,high,low,close,volume,...\"\n    const parts = candle.split(',');\n    return {\n      timestamp: parseInt(parts[0]),\n      open: parseFloat(parts[1]),\n      high: parseFloat(parts[2]),\n      low: parseFloat(parts[3]),\n      close: parseFloat(parts[4]),\n      volume: parseFloat(parts[5])\n    };\n  } else if (candle.open && candle.high && candle.low && candle.close) {\n    // Already in object format\n    return {\n      timestamp: candle.timestamp || Date.now(),\n      open: parseFloat(candle.open),\n      high: parseFloat(candle.high),\n      low: parseFloat(candle.low),\n      close: parseFloat(candle.close),\n      volume: parseFloat(candle.volume || 0)\n    };\n  }\n  \n  throw new Error('Unknown candle format');\n}\n\n// Parse all candles\nlet parsedCandles;\ntry {\n  parsedCandles = candles.map(parseCandle);\n} catch (error) {\n  return [{ json: { error: \"Failed to parse candle data: \" + error.message } }];\n}\n\n// ========== Indicator Functions ==========\n\n// EMA Calculation\nfunction computeEMA(values, period) {\n  if (values.length < period) return [];\n  const k = 2 / (period + 1);\n  let ema = Array(values.length).fill(null);\n  let sum = 0;\n  for (let i = 0; i < period; i++) sum += values[i];\n  let prev = sum / period;\n  ema[period - 1] = prev;\n  for (let i = period; i < values.length; i++) {\n    prev = values[i] * k + prev * (1 - k);\n    ema[i] = prev;\n  }\n  return ema;\n}\n\n// RSI Calculation\nfunction computeRSI(closes, period = 14) {\n  if (closes.length <= period) return [];\n  const rsi = Array(closes.length).fill(null);\n  const gains = [], losses = [];\n  for (let i = 1; i < closes.length; i++) {\n    const diff = closes[i] - closes[i - 1];\n    gains.push(diff > 0 ? diff : 0);\n    losses.push(diff < 0 ? -diff : 0);\n  }\n  let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;\n  let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;\n  rsi[period] = 100 - (100 / (1 + (avgGain / (avgLoss || 0.00001))));\n  for (let i = period; i < gains.length; i++) {\n    avgGain = (avgGain * (period - 1) + gains[i]) / period;\n    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;\n    const rs = avgGain / (avgLoss || 0.00001);\n    rsi[i + 1] = 100 - (100 / (1 + rs));\n  }\n  return rsi;\n}\n\n// ATR Calculation\nfunction computeATR(highs, lows, closes, period = 14) {\n  if (highs.length <= period) return [];\n  const trs = [];\n  for (let i = 0; i < highs.length; i++) {\n    if (i === 0) {\n      trs.push(highs[i] - lows[i]);\n    } else {\n      const tr = Math.max(\n        highs[i] - lows[i],\n        Math.abs(highs[i] - closes[i - 1]),\n        Math.abs(lows[i] - closes[i - 1])\n      );\n      trs.push(tr);\n    }\n  }\n  const atr = Array(trs.length).fill(null);\n  let sum = trs.slice(0, period).reduce((a, b) => a + b, 0);\n  atr[period - 1] = sum / period;\n  for (let i = period; i < trs.length; i++) {\n    atr[i] = (atr[i - 1] * (period - 1) + trs[i]) / period;\n  }\n  return atr;\n}\n\n// ========== Indicator Data Preparation ==========\n\nconst closes = parsedCandles.map(c => c.close);\nconst highs = parsedCandles.map(c => c.high);\nconst lows = parsedCandles.map(c => c.low);\nconst volumes = parsedCandles.map(c => c.volume);\n\nconst ema20 = computeEMA(closes, 20);\nconst ema50 = computeEMA(closes, 50);\nconst rsi14 = computeRSI(closes, 14);\nconst atr14 = computeATR(highs, lows, closes, 14);\n\n// ========== Helper Functions ==========\n\nfunction volumeSpike(index, lookback = 20, factor = 2.0) {\n  if (index < lookback) return false;\n  const slice = volumes.slice(index - lookback, index);\n  const avg = slice.reduce((a, b) => a + b, 0) / slice.length;\n  return volumes[index] > avg * factor;\n}\n\n// ========== Strong Signal Checkers ==========\n\nfunction checkStrongLong(i) {\n  if (i < 1) return false;\n  if (!(ema20[i] && ema50[i] && ema20[i] > ema50[i])) return false;\n  if (!(rsi14[i] && rsi14[i] < 65)) return false;\n  if (!(closes[i - 1] < ema20[i - 1] && closes[i] > ema20[i])) return false;\n  if (!volumeSpike(i)) return false;\n  return true;\n}\n\nfunction checkStrongShort(i) {\n  if (i < 1) return false;\n  if (!(ema20[i] && ema50[i] && ema20[i] < ema50[i])) return false;\n  if (!(rsi14[i] && rsi14[i] > 35)) return false;\n  if (!(closes[i - 1] > ema20[i - 1] && closes[i] < ema20[i])) return false;\n  if (!volumeSpike(i)) return false;\n  return true;\n}\n\n// ========== Strategy Execution ==========\n\nconst lookbackWindow = 5;\nconst lastIdx = closes.length - 1;\n\nlet signal = {\n  recommeandation: \"NO_TRADE\",\n  confidence: 0,\n  reason: \"No strong signals detected\",\n  take_entry: 0,\n  take_profit: 0,\n  stop_loss: 0,\n  timestamp: parsedCandles[lastIdx].timestamp,\n  current_price: closes[lastIdx]\n};\n\n// Check for signals in recent candles\nfor (let offset = 0; offset < lookbackWindow; offset++) {\n  const i = lastIdx - offset;\n  if (i < 1) continue;\n\n  if (checkStrongLong(i)) {\n    const entry = closes[i];\n    const atr = atr14[i];\n    if (!atr) continue;\n    const sl = entry - atr * 0.5;\n    const tp = entry + atr * 1.0;\n    signal = {\n      recommendation: \"LONG\",\n      confidence: 90,\n      reason: \"Strong long: EMA20 > EMA50 + RSI not overbought + EMA crossover + volume spike\",\n      take_entry: parseFloat(entry.toFixed(2)),\n      take_profit: parseFloat(tp.toFixed(2)),\n      stop_loss: parseFloat(sl.toFixed(2)),\n      timestamp: parsedCandles[i].timestamp,\n      current_price: parseFloat(closes[i].toFixed(2))\n    };\n    break;\n  }\n\n  if (checkStrongShort(i)) {\n    const entry = closes[i];\n    const atr = atr14[i];\n    if (!atr) continue;\n    const sl = entry + atr * 0.5;\n    const tp = entry - atr * 1.0;\n    signal = {\n      recommendation: \"SHORT\",\n      confidence: 90,\n      reason: \"Strong short: EMA20 < EMA50 + RSI not oversold + EMA crossover + volume spike\",\n      take_entry: parseFloat(entry.toFixed(2)),\n      take_profit: parseFloat(tp.toFixed(2)),\n      stop_loss: parseFloat(sl.toFixed(2)),\n      timestamp: parsedCandles[i].timestamp,\n      current_price: parseFloat(closes[i].toFixed(2))\n    };\n    break;\n  }\n}\n\n// ========== Output ==========\n\nreturn [\n  {\n    json: {\n      signal,\n      indicators: {\n        current_ema20: ema20[lastIdx] ? parseFloat(ema20[lastIdx].toFixed(2)) : null,\n        current_ema50: ema50[lastIdx] ? parseFloat(ema50[lastIdx].toFixed(2)) : null,\n        current_rsi: rsi14[lastIdx] ? parseFloat(rsi14[lastIdx].toFixed(2)) : null,\n        current_atr: atr14[lastIdx] ? parseFloat(atr14[lastIdx].toFixed(2)) : null\n      },\n      analysis_timestamp: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        208
+      ],
+      "id": "b8da5790-a584-4fbb-9b01-ea65786f14ec",
+      "name": "15m1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff0885e0-744e-45f1-aab5-901c19c358a2",
+              "name": "5m",
+              "value": "={{ $('Code in JavaScript3').item.json.signal.recommendation }}",
+              "type": "string"
+            },
+            {
+              "id": "ac3f6d27-d20d-459d-b6c1-2f37ef68f230",
+              "name": "5mtr",
+              "value": "={{ $('Code in JavaScript3').item.json.signal }}",
+              "type": "string"
+            },
+            {
+              "id": "fef32169-60ad-45a5-957f-c63ebbad4a16",
+              "name": "5min",
+              "value": "={{ $json.indicators }}",
+              "type": "string"
+            },
+            {
+              "id": "24fffc28-c13e-48cc-aa1b-381497c50c80",
+              "name": "5mc",
+              "value": "={{ $json.candles }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        -320
+      ],
+      "id": "95053191-c361-4602-8411-27e0794126a8",
+      "name": "5m"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff0885e0-744e-45f1-aab5-901c19c358a2",
+              "name": "15m",
+              "value": "={{ $json.signal.recommeandation }}",
+              "type": "string"
+            },
+            {
+              "id": "ac3f6d27-d20d-459d-b6c1-2f37ef68f230",
+              "name": "15mtr",
+              "value": "={{ $json.signal }}",
+              "type": "string"
+            },
+            {
+              "id": "fef32169-60ad-45a5-957f-c63ebbad4a16",
+              "name": "15min",
+              "value": "={{ $json.indicators }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        464
+      ],
+      "id": "d4a0164a-26ba-4d6c-aa5b-2633bf6886fb",
+      "name": "15ms"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.binance.com/api/v3/klines?symbol={{ $('Loop Over Items').item.json.pair }}&interval=5m&limit=100",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        -240
+      ],
+      "id": "e8caa10a-04af-4cd4-93f9-85b954328886",
+      "name": "5mc"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// Input: items[0].json contains the Binance klines array from HTTP Request\n// ===============================\n\nconst raw = $('15m').first().json.body;\nlet klines = raw;\n\n// In some APIs, data is under `body`\nif (raw && raw.body && Array.isArray(raw.body)) {\n  klines = raw.body;\n}\n\n// ===============================\n// Parse klines into usable objects\n// ===============================\nconst candles = klines.map(k => ({\n  time: k[0],\n  open: parseFloat(k[1]),\n  high: parseFloat(k[2]),\n  low: parseFloat(k[3]),\n  close: parseFloat(k[4]),\n  volume: parseFloat(k[5]),\n  closeTime: k[6],\n  quoteVolume: parseFloat(k[7]),\n  trades: parseInt(k[8]),\n  takerBaseVol: parseFloat(k[9]),\n  takerQuoteVol: parseFloat(k[10])\n}));\n\n// ===============================\n// Helper: EMA\n// ===============================\nfunction computeEMA(values, period) {\n  const k = 2 / (period + 1);\n  let emaArray = [];\n  let prevEma = values.slice(0, period).reduce((s, v) => s + v, 0) / period;\n  emaArray[period - 1] = prevEma;\n  for (let i = period; i < values.length; i++) {\n    prevEma = values[i] * k + prevEma * (1 - k);\n    emaArray[i] = prevEma;\n  }\n  return emaArray;\n}\n\n// ===============================\n// Helper: RSI\n// ===============================\nfunction computeRSI(closes, period = 14) {\n  let gains = [], losses = [];\n  for (let i = 1; i < closes.length; i++) {\n    const change = closes[i] - closes[i - 1];\n    gains.push(Math.max(0, change));\n    losses.push(Math.max(0, -change));\n  }\n  let avgGain = gains.slice(0, period).reduce((s, v) => s + v, 0) / period;\n  let avgLoss = losses.slice(0, period).reduce((s, v) => s + v, 0) / period;\n  let rsi = [];\n  rsi[period] = 100 - (100 / (1 + (avgGain / (avgLoss || 0.00001))));\n  for (let i = period; i < gains.length; i++) {\n    avgGain = (avgGain * (period - 1) + gains[i]) / period;\n    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;\n    const rs = avgGain / (avgLoss || 0.00001);\n    rsi[i + 1] = 100 - (100 / (1 + rs));\n  }\n  return rsi;\n}\n\n// ===============================\n// Helper: ATR\n// ===============================\nfunction computeATR(highs, lows, closes, period = 14) {\n  let trs = [];\n  for (let i = 0; i < highs.length; i++) {\n    if (i === 0) {\n      trs.push(highs[i] - lows[i]);\n    } else {\n      trs.push(Math.max(\n        highs[i] - lows[i],\n        Math.abs(highs[i] - closes[i - 1]),\n        Math.abs(lows[i] - closes[i - 1])\n      ));\n    }\n  }\n  let atr = [];\n  let sum = trs.slice(0, period).reduce((s, v) => s + v, 0);\n  atr[period - 1] = sum / period;\n  for (let i = period; i < trs.length; i++) {\n    atr[i] = (atr[i - 1] * (period - 1) + trs[i]) / period;\n  }\n  return atr;\n}\n\n// ===============================\n// Compute Indicators\n// ===============================\nconst closes = candles.map(c => c.close);\nconst highs = candles.map(c => c.high);\nconst lows = candles.map(c => c.low);\n\nconst ema20 = computeEMA(closes, 20);\nconst ema50 = computeEMA(closes, 50);\nconst rsi = computeRSI(closes, 14);\nconst atr = computeATR(highs, lows, closes, 14);\n\nconst lastIndex = candles.length - 1;\n\n// ===============================\n// Add latest indicator values\n// ===============================\nconst indicators = {\n  last_close: closes[lastIndex],\n  ema20: ema20[lastIndex] || null,\n  ema50: ema50[lastIndex] || null,\n  rsi: rsi[lastIndex] || null,\n  atr: atr[lastIndex] || null,\n  avgVolume: candles.slice(-20).reduce((s, c) => s + c.volume, 0) / 20,\n  avgTrades: candles.slice(-20).reduce((s, c) => s + c.trades, 0) / 20\n};\n\n// ===============================\n// Prepare the output for OpenAI\n// ===============================\nreturn [\n  {\n    json: {\n      candles,\n      indicators,\n      meta: {\n        symbol: $('Edit Fields').first().json.symbol,\n        interval: $('Edit Fields').first().json.interval\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        224
+      ],
+      "id": "671360aa-a4b1-4e73-b9c5-97187252bb2e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "977a9142-44ce-4697-a8f5-a5bb87a58426",
+              "leftValue": "={{ $('Code in JavaScript3').item.json.signal.recommendation }}",
+              "rightValue": "NO_TRADE",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "5e99533c-bbe3-4251-a3fc-0ceeed5ce425",
+              "leftValue": "={{ $('Code in JavaScript3').item.json.signal.confidence }}",
+              "rightValue": 90,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        -80
+      ],
+      "id": "34a76d37-c84e-43ff-addb-f3616be875f0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff0885e0-744e-45f1-aab5-901c19c358a2",
+              "name": "15m",
+              "value": "={{ $('15m1').item.json.signal.recommendation }}",
+              "type": "string"
+            },
+            {
+              "id": "ac3f6d27-d20d-459d-b6c1-2f37ef68f230",
+              "name": "=15mtr",
+              "value": "={{ $('15m1').item.json.signal }}",
+              "type": "string"
+            },
+            {
+              "id": "fef32169-60ad-45a5-957f-c63ebbad4a16",
+              "name": "15min",
+              "value": "={{ $json.indicators }}",
+              "type": "string"
+            },
+            {
+              "id": "24fffc28-c13e-48cc-aa1b-381497c50c80",
+              "name": "15mc",
+              "value": "={{ $json.candles }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        32
+      ],
+      "id": "dc1af686-0566-4ff3-92ec-725a3b4172fa",
+      "name": "15m2"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        32
+      ],
+      "id": "b5eff416-c2ee-4d2f-aaa5-e8ca5820ddb9",
+      "name": "Wait",
+      "webhookId": "1336f075-f988-44f5-932d-75e0f50c39d4"
+    },
+    {
+      "parameters": {
+        "chatId": "6288372897",
+        "text": "run done",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        -416
+      ],
+      "id": "c3e42f3e-dd3b-48f0-abd2-ad6f3c295697",
+      "name": "Send a text message1",
+      "webhookId": "864234f5-ba4d-4cdf-91d3-5263432085f9",
+      "credentials": {
+        "telegramApi": {
+          "id": "Am7rU3uv7WoKfRim",
+          "name": "trade"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -528
+      ],
+      "id": "62c72409-3caa-404e-a529-7844f737b733",
+      "name": "Aggregate"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "isArtificialRecoveredEventItem": true
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "5mc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "5m",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        []
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "binance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        []
+      ]
+    },
+    "binance": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        []
+      ]
+    },
+    "Set Order Data": {
+      "main": [
+        []
+      ]
+    },
+    "15m": {
+      "main": [
+        [
+          {
+            "node": "15m1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15m1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5m": {
+      "main": [
+        [
+          {
+            "node": "15m",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15ms": {
+      "main": [
+        []
+      ]
+    },
+    "5mc": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "15m2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15m2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        []
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "907b6d1f-0422-473d-93c2-7c28af3935b6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6b2a2792e2084f88b89d6812f64e6f6c7bdb546497b8eaa54b089f29de94d05d"
+  },
+  "id": "da2KDDL8OhT7xXuj",
+  "tags": []
+}
