@@ -85,22 +85,32 @@ After importing, open the nodes with credential warnings and connect your accoun
 
 ## 🗂️ Repo Structure
 
-.
-├─ README.md
-├─ rename-n8n.ps1 # Windows: safe rename script
-├─ rename-n8n.sh # Linux/macOS: safe rename script
-├─ Reddit-Memes_to_GDrive-Dedupe_Telegram-Alerts.json
-├─ Reddit-Image_to_Facebook-Photo_AutoPoster.json
-├─ Terabox-Link_to_Direct-Download_Telegram-Sender.json
-├─ AI-Scalping_Signals-Binance_Bybit_to_Telegram.json
-├─ Reddit-Memes_to_GDrive-Dedupe_Telegram-Alerts_v2.json
-├─ Drive-Folder_to_YouTube_Uploader_AI-Title-Tags.json
-├─ Drive-Video_to_FB-IG-Telegram_Multipost.json
-├─ Telegram-Shop_Assistant_Image-Analyze_to_Sheets-Match_BN.json
-└─ Telegram-CryptoPair_to_Binance_15m-1h-1d_Analyzer.json
+Here's an overview of the key files in this repository:
 
-yaml
-Copy code
+### Workflows
+
+The core of this repository. These are the n8n JSON files that you can import.
+
+- `Reddit-Memes_to_GDrive-Dedupe_Telegram-Alerts.json`
+- `Reddit-Image_to_Facebook-Photo_AutoPoster.json`
+- `Terabox-Link_to_Direct-Download_Telegram-Sender.json`
+- `AI-Scalping_Signals-Binance_Bybit_to_Telegram.json`
+- `Reddit-Memes_to_GDrive-Dedupe_Telegram-Alerts_v2.json`
+- `Drive-Folder_to_YouTube_Uploader_AI-Title-Tags.json`
+- `Drive-Video_to_FB-IG-Telegram_Multipost.json`
+- `Telegram-Shop_Assistant_Image-Analyze_to_Sheets-Match_BN.json`
+- `Telegram-CryptoPair_to_Binance_15m-1h-1d_Analyzer.json`
+
+### Scripts
+
+Helper scripts for managing the workflow files.
+
+- `rename-n8n.ps1`: A PowerShell script for Windows users to rename files.
+- `rename-n8n.sh`: A shell script for Linux and macOS users to rename files.
+
+### Documentation
+
+- `README.md`: The file you are currently reading.
 
 ---
 
